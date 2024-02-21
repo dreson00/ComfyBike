@@ -66,6 +66,10 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    //Maps
     implementation ("com.google.maps.android:maps-compose:4.3.0")
-    implementation("com.leinardi.android:speed-dial.compose:1.0.0-alpha04")
+
+    //SpeedDial
+    implementation("com.leinardi.android:speed-dial.compose:2.0.0-alpha01")
 }
