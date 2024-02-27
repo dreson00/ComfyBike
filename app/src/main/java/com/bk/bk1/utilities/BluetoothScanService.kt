@@ -26,7 +26,9 @@ class BluetoothScanService(private val context: Context) {
                 val isDeviceInList = devicesLiveData.value?.contains(result.device)
                 if((isDeviceInList == null || isDeviceInList == false)
                     && result.device.name != null
-                    && result.device.name.startsWith("Movesense")) {
+                    && result.device.name.startsWith("Movesense")
+                    ) {
+                    println(result.device.address)
                     newDeviceList.add(result.device)
                     devicesLiveData.value = newDeviceList
                 }

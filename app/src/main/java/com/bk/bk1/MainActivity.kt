@@ -22,14 +22,14 @@ class MainActivity : ComponentActivity() {
     private val MY_PERMISSIONS_REQUEST_BLUETOOTH_AND_LOCATION = 1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        checkPermissions()
+//        checkPermissions()
         setContent {
             BK1Theme {
                 val context = LocalContext.current
                 val navController = rememberNavController()
-                val fusedLocationProviderClient =  LocationServices.getFusedLocationProviderClient(context)
                 NavHost(navController = navController, startDestination = "mapScreen") {
                     composable("mapScreen") {
+                        val fusedLocationProviderClient =  LocationServices.getFusedLocationProviderClient(context)
                         MainMapScreen(navController, fusedLocationProviderClient)
                     }
                     composable("sensorConnectScreen") {
