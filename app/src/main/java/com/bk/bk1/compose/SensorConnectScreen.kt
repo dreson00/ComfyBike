@@ -3,6 +3,7 @@ package com.bk.bk1.compose
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -86,7 +87,8 @@ fun SensorConnectScreen(navController: NavController , btService: BluetoothScanS
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(Color.LightGray)
                                 .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+
                         ) {
                             Text(device.name.toString())
                         }

@@ -7,16 +7,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -31,6 +32,7 @@ import com.bk.bk1.viewModels.MainMapScreenViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
@@ -39,6 +41,8 @@ import com.leinardi.android.speeddial.compose.FabWithLabel
 import com.leinardi.android.speeddial.compose.SpeedDial
 import com.leinardi.android.speeddial.compose.SpeedDialState
 import kotlinx.coroutines.launch
+import java.util.Timer
+import java.util.TimerTask
 
 @Composable
 @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
@@ -58,7 +62,23 @@ fun MainMapScreen(navController: NavController, fusedLocationProviderClient: Fus
     val coroutineScope = rememberCoroutineScope()
     val cameraPositionState = rememberCameraPositionState()
 
+    val location = viewModel.lastKnownLocation.value
 
+    val timer = Timer()
+    timer.schedule(object : TimerTask() {
+        override fun run() {
+            if (location != null) {
+                coroutineScope.launch {
+                    if (viewModel.cameraFollow) {
+                        cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(location.latitude, location.longitude)))
+                        if (cameraPositionState.position.zoom < 15F) {
+                            cameraPositionState.animate(CameraUpdateFactory.zoomTo(15F))
+                        }
+                    }
+                }
+            }
+        }
+    }, 0, 500)
 
     Scaffold(
         floatingActionButton = {
@@ -92,30 +112,34 @@ fun MainMapScreen(navController: NavController, fusedLocationProviderClient: Fus
                     uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
                     properties = MapProperties(isMyLocationEnabled = true),
                     cameraPositionState = cameraPositionState
-                )
-                FloatingActionButton(
-                    modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
-                    onClick = {
-                        val location = viewModel.mapState.value.lastKnownLocation
-                        if (location != null) {
-                            coroutineScope.launch {
-                                cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(location.latitude, location.longitude)))
-                                if (cameraPositionState.position.zoom < 15F) {
-                                    cameraPositionState.animate(CameraUpdateFactory.zoomTo(15F))
-                                }
-
-                            }
+                ) {
+                    LaunchedEffect(cameraPositionState.isMoving) {
+                        if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
+                            viewModel.disableCameraFollow()
+                            speedDialState = SpeedDialState.Collapsed
                         }
                     }
+                }
+                FloatingActionButton(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp),
+                    onClick = {
+                        viewModel.toggleCameraFollow()
+                    }
                 ) {
-                    Icon(Icons.Filled.LocationOn, contentDescription = "Moje poloha")
+                    if (viewModel.cameraFollow) {
+                        Icon(Icons.Filled.Favorite, contentDescription = "Moje poloha")
+                    }
+                    else {
+                        Icon(Icons.Filled.FavoriteBorder, contentDescription = "Moje poloha")
+                    }
                 }
             }
         }
     )
 
 }
-
 
 //item {
 //    FabWithLabel(
