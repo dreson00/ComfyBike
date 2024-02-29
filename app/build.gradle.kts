@@ -79,5 +79,13 @@ dependencies {
     //Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
+    //Livedata
     implementation("androidx.compose.runtime:runtime-livedata:1.6.2")
+
+    //Movesense
+    implementation(files("./libs/mdslib-3.15.0(1)-release.aar"))
+
+    implementation("com.polidea.rxandroidble2:rxandroidble:1.10.2")
+    implementation("io.reactivex.rxjava2:rxandroid:2.1.1")
+    implementation("io.reactivex.rxjava2:rxjava:2.2.8")
 }

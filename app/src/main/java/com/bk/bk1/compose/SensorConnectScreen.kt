@@ -81,6 +81,12 @@ fun SensorConnectScreen(navController: NavController , btService: BluetoothScanS
                     items(devices) { device ->
                         Row(
                             modifier = Modifier
+                                .clickable {
+                                    navController.previousBackStackEntry
+                                        ?.savedStateHandle
+                                        ?.set("sensor_address", device.address)
+                                    navController.popBackStack()
+                                }
                                 .height(70.dp)
                                 .fillMaxWidth()
                                 .border(2.dp, Color.Black, RoundedCornerShape(10.dp))

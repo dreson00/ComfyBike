@@ -16,6 +16,7 @@ import com.bk.bk1.compose.SensorConnectScreen
 import com.bk.bk1.ui.theme.BK1Theme
 import com.bk.bk1.utilities.BluetoothScanService
 import com.google.android.gms.location.LocationServices
+import com.movesense.mds.Mds
 
 class MainActivity : ComponentActivity() {
 
@@ -28,9 +29,10 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val navController = rememberNavController()
                 NavHost(navController = navController, startDestination = "mapScreen") {
-                    composable("mapScreen") {
+                    composable("mapScreen") { entry ->
                         val fusedLocationProviderClient =  LocationServices.getFusedLocationProviderClient(context)
-                        MainMapScreen(navController, fusedLocationProviderClient)
+                        val mds = Mds.builder().build(context)
+                        MainMapScreen(entry, navController, fusedLocationProviderClient, mds)
                     }
                     composable("sensorConnectScreen") {
                         val btService = BluetoothScanService(context)
