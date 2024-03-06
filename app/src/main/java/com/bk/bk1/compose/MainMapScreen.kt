@@ -1,5 +1,6 @@
 package com.bk.bk1.compose
 
+import android.location.Location
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,20 +21,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
+import com.bk.bk1.utilities.SensorService
 import com.bk.bk1.viewModels.MainMapScreenViewModel
-import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraMoveStartedReason
@@ -44,55 +40,35 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.leinardi.android.speeddial.compose.FabWithLabel
 import com.leinardi.android.speeddial.compose.SpeedDial
 import com.leinardi.android.speeddial.compose.SpeedDialState
-import com.movesense.mds.Mds
-import kotlinx.coroutines.launch
-import java.util.Timer
-import java.util.TimerTask
 
 @Composable
 @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
 fun MainMapScreen(
-    entry: NavBackStackEntry,
     navController: NavController,
-    fusedLocationProviderClient: FusedLocationProviderClient,
-    mds: Mds
+    viewModel: MainMapScreenViewModel,
+    sensorServiceStopper: () -> Unit
 ) {
-    val viewModel = viewModel<MainMapScreenViewModel>(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return MainMapScreenViewModel(fusedLocationProviderClient, mds) as T
-            }
-        }
-    )
-
 
     var speedDialState by rememberSaveable { mutableStateOf(SpeedDialState.Collapsed) }
     var overlayVisible by rememberSaveable { mutableStateOf(speedDialState.isExpanded()) }
 
-    val coroutineScope = rememberCoroutineScope()
     val cameraPositionState = rememberCameraPositionState()
 
-    val timer = Timer()
-    timer.schedule(object : TimerTask() {
-        override fun run() {
-            coroutineScope.launch {
-                val location = viewModel.location.value
-                if (viewModel.cameraFollow && location != null) {
-                    cameraPositionState.animate(CameraUpdateFactory
-                        .newLatLng(LatLng(location.latitude, location.longitude)))
-                    if (cameraPositionState.position.zoom < 15F) {
-                        cameraPositionState.animate(CameraUpdateFactory.zoomTo(15F))
-                    }
-                }
+    val location: Location? by viewModel.location.observeAsState(null)
+    val connectionStatus: Int? by SensorService.deviceInfo.connectionState.observeAsState(null)
+
+
+    LaunchedEffect(location) {
+        if (viewModel.cameraFollow && location != null) {
+            cameraPositionState.animate(
+                CameraUpdateFactory
+                    .newLatLng(LatLng(location!!.latitude, location!!.longitude))
+            )
+            if (cameraPositionState.position.zoom < 15F) {
+                cameraPositionState.animate(CameraUpdateFactory.zoomTo(15F))
             }
         }
-    }, 0, 500)
-
-    val sensorAddress = entry.savedStateHandle.get<String>("sensor_address")
-    if (viewModel.deviceInfo.address == "" && sensorAddress != null) {
-        viewModel.connectToSensor(sensorAddress)
     }
-    val connectionState by viewModel.deviceInfo.connectionState.observeAsState()
 
     Scaffold(
         floatingActionButton = {
@@ -109,20 +85,24 @@ fun MainMapScreen(
 
                 }
             ) {
-                item {
-                    FabWithLabel(
-                        onClick = { navController.navigate("sensorConnectScreen") },
-                        labelContent = { Text(text = "Připojit senzor") },
-                    ) {
-                        Icon(Icons.Default.Add, null)
+                if (connectionStatus == 0) {
+                    item {
+                        FabWithLabel(
+                            onClick = { navController.navigate("sensorConnectScreen") },
+                            labelContent = { Text(text = "Připojit senzor") },
+                        ) {
+                            Icon(Icons.Default.Add, null)
+                        }
                     }
                 }
-                item {
-                    FabWithLabel(
-                        onClick = { viewModel.disconnectSensor() },
-                        labelContent = { Text(text = "Odpojit senzor") },
-                    ) {
-                        Icon(Icons.Default.Delete, null)
+                else {
+                    item {
+                        FabWithLabel(
+                            onClick = { sensorServiceStopper() },
+                            labelContent = { Text(text = "Odpojit senzor") },
+                        ) {
+                            Icon(Icons.Default.Delete, null)
+                        }
                     }
                 }
             }
@@ -143,7 +123,7 @@ fun MainMapScreen(
                     }
                 }
                 Text(
-                    text = connectionState.toString(),
+                    text = connectionStatus.toString(),
                     color = Color.Black)
                 FloatingActionButton(
                     modifier = Modifier

@@ -26,10 +26,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -41,7 +43,10 @@ import com.bk.bk1.viewModels.SensorConnectScreenViewModel
 
 @SuppressLint("MissingPermission")
 @Composable
-fun SensorConnectScreen(navController: NavController , btService: BluetoothScanService) {
+fun SensorConnectScreen(navController: NavController, sensorServiceStarter: (address: String) -> Unit) {
+    val context = LocalContext.current
+    val btService = remember { BluetoothScanService(context) }
+
     val viewModel = viewModel<SensorConnectScreenViewModel>(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -82,9 +87,7 @@ fun SensorConnectScreen(navController: NavController , btService: BluetoothScanS
                         Row(
                             modifier = Modifier
                                 .clickable {
-                                    navController.previousBackStackEntry
-                                        ?.savedStateHandle
-                                        ?.set("sensor_address", device.address)
+                                    sensorServiceStarter(device.address)
                                     navController.popBackStack()
                                 }
                                 .height(70.dp)
