@@ -1,6 +1,8 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("kotlin-kapt")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
 }
 
 android {
@@ -82,10 +84,20 @@ dependencies {
     //Livedata
     implementation("androidx.compose.runtime:runtime-livedata:1.6.2")
 
-    //Movesense
+    //Movesense + rxjava
     implementation(files("./libs/mdslib-3.15.0(1)-release.aar"))
-
     implementation("com.polidea.rxandroidble2:rxandroidble:1.10.2")
     implementation("io.reactivex.rxjava2:rxandroid:2.1.1")
     implementation("io.reactivex.rxjava2:rxjava:2.2.8")
+
+    //Room
+    val roomVersion = "2.6.1"
+
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    annotationProcessor("androidx.room:room-compiler:$roomVersion")
+    kapt("androidx.room:room-compiler:$roomVersion")
+
+    //Json
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 }

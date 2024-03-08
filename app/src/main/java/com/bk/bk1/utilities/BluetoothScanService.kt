@@ -37,4 +37,9 @@ class BluetoothScanService(private val context: Context) {
 
         leScanner?.startScan(scanCallback)
     }
+    @SuppressLint("MissingPermission")
+    fun stopScan() {
+        leScanner?.stopScan(scanCallback)
+        devicesLiveData.value = emptyList()
+    }
 }

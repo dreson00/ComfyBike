@@ -9,5 +9,8 @@ class SensorConnectScreenViewModel(private val btService: BluetoothScanService) 
     fun startScan() {
         btService.startScan()
     }
+    fun stopScan() {
+        btService.stopScan()
+    }
 
 }

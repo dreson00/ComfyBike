@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
@@ -54,7 +55,12 @@ fun SensorConnectScreen(navController: NavController, sensorServiceStarter: (add
             }
         }
     )
-    viewModel.startScan()
+
+    LaunchedEffect(viewModel) {
+        viewModel.startScan()
+    }
+
+
     val devices by viewModel.devicesLiveData.observeAsState(initial = emptyList())
 
     Scaffold(
@@ -62,7 +68,12 @@ fun SensorConnectScreen(navController: NavController, sensorServiceStarter: (add
             TopAppBar(
                 title = { Text("Připojit senzor") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = {
+                            viewModel.stopScan()
+                            navController.popBackStack()
+                        }
+                    ) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Zpět")
                     }
                 }
@@ -88,6 +99,7 @@ fun SensorConnectScreen(navController: NavController, sensorServiceStarter: (add
                             modifier = Modifier
                                 .clickable {
                                     sensorServiceStarter(device.address)
+                                    viewModel.stopScan()
                                     navController.popBackStack()
                                 }
                                 .height(70.dp)
