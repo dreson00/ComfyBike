@@ -8,5 +8,6 @@ data class TrackRecord (
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val name: String,
-    val time: String
+    val time: String,
+    var visible: Boolean = true
 )

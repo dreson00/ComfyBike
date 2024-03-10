@@ -3,6 +3,7 @@ package com.bk.bk1.compose
 import android.content.Context
 import android.graphics.Bitmap
 import android.location.Location
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,9 +33,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.BlendModeColorFilterCompat
+import androidx.core.graphics.BlendModeCompat
 import androidx.navigation.NavController
+import com.bk.bk1.R
 import com.bk.bk1.models.LinearAcceleration
 import com.bk.bk1.utilities.SensorService
 import com.bk.bk1.viewModels.MainMapScreenViewModel
@@ -43,10 +49,11 @@ import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraMoveStartedReason
-import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.leinardi.android.speeddial.compose.FabWithLabel
 import com.leinardi.android.speeddial.compose.SpeedDial
@@ -69,7 +76,6 @@ fun MainMapScreen(
     val connectionStatus: Int? by SensorService.deviceInfo.connectionState.observeAsState(null)
     val isTrackingOn: Boolean by SensorService.isTrackingOn.observeAsState(false)
     val sensorData: LinearAcceleration? by SensorService.sensorData.observeAsState(null)
-    val location2: Location? by SensorService.location.observeAsState(initial = null)
 
     LaunchedEffect(location) {
         if (viewModel.cameraFollow && location != null) {
@@ -95,7 +101,6 @@ fun MainMapScreen(
                     } else {
                         SpeedDialState.Collapsed
                     }
-
                 }
             ) {
                 if (connectionStatus == 0) {
@@ -172,17 +177,13 @@ fun MainMapScreen(
                     if (comfortIndexRecords.value.isNotEmpty()) {
                         comfortIndexRecords.value.forEach { item ->
                             val color = Color.hsl(mapFloatToHue(item.comfortIndex), 1f, 0.5f)
-                            Circle(
-                                center = LatLng(item.latitude, item.longitude),
-                                radius = 5.0,
-                                fillColor = color,
-                                strokeColor = color,
-                                tag = "CI: ${item.comfortIndex}"
+                            MapMarker(
+                                context = LocalContext.current,
+                                position = LatLng(item.latitude, item.longitude),
+                                title = "CI: ${item.comfortIndex}",
+                                color = color,
+                                iconResourceId = R.drawable.baseline_circle_12
                             )
-//                            AdvancedMarker(
-//                                state = MarkerState(LatLng(item.latitude, item.longitude)),
-//
-//                            )
                         }
                     }
                 }
@@ -195,23 +196,6 @@ fun MainMapScreen(
                         text = sensorData?.Body?.Timestamp.toString(),
                         color = Color.Black
                     )
-                    Text(
-                        text = "${location2?.latitude}, ${location2?.longitude}",
-                        color = Color.Black
-                    )
-                    Text(
-                        text = "x: ${sensorData?.Body?.arrayAcc?.first()?.x}",
-                        color = Color.Black
-                    )
-                    Text(
-                        text = "y: ${sensorData?.Body?.arrayAcc?.first()?.y}",
-                        color = Color.Black
-                    )
-                    Text(
-                        text = "z: ${sensorData?.Body?.arrayAcc?.first()?.z}",
-                        color = Color.Black
-                    )
-
                 }
                 FloatingActionButton(
                     modifier = Modifier
@@ -233,40 +217,44 @@ fun MainMapScreen(
     )
 }
 
-//item {
-//    FabWithLabel(
-//        onClick = { },
-//        labelContent = { Text(text = "Item 1") },
-//    ) {
-//        Icon(Icons.Default.Share, null)
-//    }
-//}
 
 //https://towardsdev.com/jetpack-compose-custom-google-map-marker-erselan-khan-e6e04178a30b
+@Composable
+fun MapMarker(
+    context: Context,
+    position: LatLng,
+    title: String,
+    color: Color,
+    @DrawableRes iconResourceId: Int
+) {
+    val icon = bitmapDescriptorFromVector(context, iconResourceId, color)
+    Marker(
+        state = MarkerState(position),
+        title = title,
+        icon = icon,
+    )
+}
+
 fun bitmapDescriptorFromVector(
     context: Context,
-    vectorResId: Int
+    vectorResId: Int,
+    color: Color
 ): BitmapDescriptor? {
     val drawable = ContextCompat.getDrawable(context, vectorResId) ?: return null
     drawable.setBounds(0, 0, drawable.intrinsicWidth, drawable.intrinsicHeight)
+    drawable.colorFilter = BlendModeColorFilterCompat
+        .createBlendModeColorFilterCompat(color.toArgb(), BlendModeCompat.SRC_ATOP)
     val bm = Bitmap.createBitmap(
         drawable.intrinsicWidth,
         drawable.intrinsicHeight,
         Bitmap.Config.ARGB_8888
     )
 
-    // draw it onto the bitmap
     val canvas = android.graphics.Canvas(bm)
     drawable.draw(canvas)
     return BitmapDescriptorFactory.fromBitmap(bm)
 }
 
 fun mapFloatToHue(value: Float): Float {
-//    val originalStart = 0
-//    val originalEnd = 1
-//    val newStart = 0
-//    val newEnd = 360
-//
-//    return (((value - originalStart) * (newEnd - newStart)) / (originalEnd - originalStart)) + newStart
     return value * 130
 }

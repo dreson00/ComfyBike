@@ -21,9 +21,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -44,11 +48,6 @@ class SensorService : Service() {
     private val channelId = "sensor_channel"
     private lateinit var locationClient: LocationClient
     private lateinit var mds: Mds
-//    var deviceInfo = BluetoothDeviceInfo(
-//        address = "",
-//        MutableLiveData(String()),
-//        MutableLiveData(0)
-//    )
 
     private var sensorNotificationListener = SensorNotificationListener(::onNotification)
     private var mdsSubscription: MdsSubscription? = null
@@ -98,13 +97,11 @@ class SensorService : Service() {
             }
             .launchIn(serviceScope)
 
-
         startForeground(1, notification.build())
-
-
     }
 
     private fun stopService() {
+        stopTracking()
         disconnectSensor()
         stopSelf()
     }
@@ -115,7 +112,9 @@ class SensorService : Service() {
         }
         isTrackingOn.postValue(true)
         serviceScope.launch {
-            val trackRecord = TrackRecord(name = "Trasa", time = "time")
+            val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            val dateString = formatter.format(Date())
+            val trackRecord = TrackRecord(name = "Trasa", time = dateString)
             lastTrackId =  db.trackRecordDao.upsertTrackRecord(trackRecord).toInt()
         }
     }
@@ -170,14 +169,31 @@ class SensorService : Service() {
                     serviceScope.launch {
                         val currentLocation = location.value
                         currentLocation?.let {
-                            db.comfortIndexRecordDao.upsertRecord(
-                                ComfortIndexRecord(
-                                    comfortIndex = comfortIndex,
-                                    trackRecordId = lastTrackId,
-                                    latitude = currentLocation.latitude,
-                                    longitude = currentLocation.longitude
+                            val closeRecord = db.comfortIndexRecordDao
+                                .getRecordsByTrackId(lastTrackId)
+                                .first()
+                                .firstOrNull { record ->
+                                    val recordLocation = Location("").apply {
+                                        latitude = record.latitude
+                                        longitude = record.longitude
+                                    }
+                                    currentLocation.distanceTo(recordLocation) < 5
+                                }
+
+                            if (closeRecord != null) {
+                                closeRecord.comfortIndex = (closeRecord.comfortIndex + comfortIndex) / 2.0f
+                                db.comfortIndexRecordDao.updateRecord(closeRecord)
+                            }
+                            else {
+                                db.comfortIndexRecordDao.upsertRecord(
+                                    ComfortIndexRecord(
+                                        comfortIndex = comfortIndex,
+                                        trackRecordId = lastTrackId,
+                                        latitude = currentLocation.latitude,
+                                        longitude = currentLocation.longitude
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 }

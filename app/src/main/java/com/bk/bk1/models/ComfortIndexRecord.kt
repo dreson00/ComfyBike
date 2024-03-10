@@ -13,7 +13,7 @@ import androidx.room.PrimaryKey
 data class ComfortIndexRecord(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
-    val comfortIndex: Float,
+    var comfortIndex: Float,
     val trackRecordId: Int,
     val latitude: Double,
     val longitude: Double
