@@ -41,7 +41,6 @@ import androidx.core.graphics.BlendModeColorFilterCompat
 import androidx.core.graphics.BlendModeCompat
 import androidx.navigation.NavController
 import com.bk.bk1.R
-import com.bk.bk1.models.LinearAcceleration
 import com.bk.bk1.utilities.SensorService
 import com.bk.bk1.viewModels.MainMapScreenViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -73,9 +72,9 @@ fun MainMapScreen(
     val cameraPositionState = rememberCameraPositionState()
 
     val location: Location? by viewModel.location.observeAsState(null)
-    val connectionStatus: Int? by SensorService.deviceInfo.connectionState.observeAsState(null)
-    val isTrackingOn: Boolean by SensorService.isTrackingOn.observeAsState(false)
-    val sensorData: LinearAcceleration? by SensorService.sensorData.observeAsState(null)
+    val connectionStatus: Int by viewModel.connectionStatus.observeAsState(initial = 0)
+    val trackingStatus: Int by viewModel.trackingStatus.observeAsState(initial = 0)
+
 
     LaunchedEffect(location) {
         if (viewModel.cameraFollow && location != null) {
@@ -125,7 +124,7 @@ fun MainMapScreen(
                         }
                     }
                 }
-                if (connectionStatus == 2 && !isTrackingOn) {
+                if (connectionStatus == 2 && trackingStatus == 0) {
                     item {
                         FabWithLabel(
                             onClick = {
@@ -137,7 +136,7 @@ fun MainMapScreen(
                         }
                     }
                 }
-                else if (isTrackingOn) {
+                else if (trackingStatus == 1) {
                     item {
                         FabWithLabel(
                             onClick = {
@@ -189,11 +188,7 @@ fun MainMapScreen(
                 }
                 Column {
                     Text(
-                        text = connectionStatus.toString(),
-                        color = Color.Black
-                    )
-                    Text(
-                        text = sensorData?.Body?.Timestamp.toString(),
+                        text = "Connection: $connectionStatus",
                         color = Color.Black
                     )
                 }

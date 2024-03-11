@@ -19,6 +19,8 @@ class DefaultLocationClient(
     private val context: Context,
     private val client: FusedLocationProviderClient
 ): LocationClient {
+
+    private lateinit var locationCallback: LocationCallback
     @SuppressLint("MissingPermission")
     override fun getLocationUpdates(interval: Long): Flow<Location> {
         return callbackFlow {
@@ -34,7 +36,7 @@ class DefaultLocationClient(
                     setWaitForAccurateLocation(true)
                 }.build()
 
-            val locationCallback: LocationCallback = object : LocationCallback() {
+            locationCallback = object : LocationCallback() {
                 override fun onLocationResult(locationResult: LocationResult) {
                     super.onLocationResult(locationResult)
                     locationResult.locations.lastOrNull()?.let { location ->
@@ -52,9 +54,13 @@ class DefaultLocationClient(
             )
 
             awaitClose {
-                client.removeLocationUpdates(locationCallback)
+                removeLocationUpdates()
             }
         }
+    }
+
+    override fun removeLocationUpdates() {
+        client.removeLocationUpdates(locationCallback)
     }
 
 }

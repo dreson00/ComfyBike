@@ -9,7 +9,7 @@ import com.bk.bk1.models.TrackRecord
 
 @Database(
     entities = [TrackRecord::class, ComfortIndexRecord::class],
-    version = 1
+    version = 2
 )
 abstract class TrackDatabase : RoomDatabase() {
 

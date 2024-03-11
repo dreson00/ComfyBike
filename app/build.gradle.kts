@@ -103,4 +103,7 @@ dependencies {
 
     //Leak canary
     debugImplementation("com.squareup.leakcanary:leakcanary-android:3.0-alpha-1")
+
+    //Event Bus
+    implementation("com.squareup:otto:1.3.8")
 }

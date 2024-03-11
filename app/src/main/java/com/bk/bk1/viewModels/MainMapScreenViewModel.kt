@@ -12,11 +12,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bk.bk1.data.ComfortIndexRecordDao
 import com.bk.bk1.data.TrackRecordDao
+import com.bk.bk1.events.ConnectionStatusChangedEvent
+import com.bk.bk1.events.TrackingStatusChangedEvent
+import com.bk.bk1.utilities.BusProvider
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.Priority
+import com.squareup.otto.Subscribe
 import kotlinx.coroutines.launch
 
 @SuppressLint("MissingPermission")
@@ -30,7 +34,7 @@ class MainMapScreenViewModel(
     var location = MutableLiveData<Location>(null)
 
     private var locationRequest: LocationRequest =
-        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000).apply {
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2500).apply {
             setWaitForAccurateLocation(true)
         }.build()
     private var locationCallback: LocationCallback = object : LocationCallback() {
@@ -40,11 +44,15 @@ class MainMapScreenViewModel(
     }
 
     var comfortIndexRecords = comfortIndexRecordDao.getAllRecords()
+    val connectionStatus = MutableLiveData(0)
+    private val bus = BusProvider.getEventBus()
+    val trackingStatus = MutableLiveData(0)
 
 
     init {
         fLocationProviderClient
             .requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        bus.register(this)
     }
 
     fun toggleCameraFollow() {
@@ -67,12 +75,23 @@ class MainMapScreenViewModel(
     override fun onCleared() {
         super.onCleared()
         fLocationProviderClient.removeLocationUpdates(locationCallback)
+        bus.unregister(this)
     }
 
     fun deleteAllTracks() {
         viewModelScope.launch {
             trackRecordDao.deleteAll()
         }
+    }
+
+    @Subscribe
+    fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
+        connectionStatus.postValue(event.connectionStatus)
+    }
+
+    @Subscribe
+    fun onTrackingStatusChanged(event: TrackingStatusChangedEvent) {
+        trackingStatus.postValue(event.trackingStatus)
     }
 
 }
