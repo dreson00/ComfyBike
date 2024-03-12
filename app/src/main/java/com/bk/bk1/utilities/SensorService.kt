@@ -1,12 +1,17 @@
 package com.bk.bk1.utilities
 
 import android.app.Service
+import android.bluetooth.BluetoothAdapter
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Binder
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.bk.bk1.R
 import com.bk.bk1.data.TrackDatabase
+import com.bk.bk1.events.BluetoothAdapterStatusChangedEvent
 import com.bk.bk1.events.SensorAddressChangedEvent
 import com.google.android.gms.location.LocationServices
 import com.movesense.mds.Mds
@@ -26,6 +31,26 @@ class SensorService : Service() {
     private val bus = BusProvider.getEventBus()
     private var sensorAddress = String()
 
+    private var bluetoothAdapterStatus = 0
+
+    private val bluetoothStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val action = intent.action
+            if (action == BluetoothAdapter.ACTION_STATE_CHANGED) {
+                when (intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)) {
+                    BluetoothAdapter.STATE_OFF -> {
+                        bluetoothAdapterStatus = BluetoothAdapter.STATE_OFF
+                        bus.post(produceBluetoothAdapterStatusChangedEvent())
+                    }
+                    BluetoothAdapter.STATE_ON -> {
+                        bluetoothAdapterStatus = BluetoothAdapter.STATE_ON
+                        bus.post(produceBluetoothAdapterStatusChangedEvent())
+                    }
+                }
+            }
+        }
+    }
+
 
     override fun onCreate() {
         super.onCreate()
@@ -42,6 +67,14 @@ class SensorService : Service() {
             db.trackRecordDao,
             locationClient)
     }
+
+//    private fun checkAndSetBluetoothAdapterStatus() {
+//        bluetoothAdapter?.let {
+//            if (bluetoothAdapter.isEnabled || bluetoothAdapter.i) {
+//                bluetoothAdapterStatus = BluetoothAdapter.STATE_ON
+//            }
+//        }
+//    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -69,10 +102,14 @@ class SensorService : Service() {
                 .setContentText("Running...")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
 
+        val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+        registerReceiver(bluetoothStateReceiver, filter)
+
         startForeground(1, notification.build())
     }
 
     private fun stopService() {
+        unregisterReceiver(bluetoothStateReceiver)
         stopTracking()
         sensorManager.disconnectSensor()
         sensorAddress = String()
@@ -94,6 +131,11 @@ class SensorService : Service() {
     @Produce
     fun produceSensorAddressEvent(): SensorAddressChangedEvent {
         return SensorAddressChangedEvent(sensorAddress)
+    }
+
+    @Produce
+    fun produceBluetoothAdapterStatusChangedEvent(): BluetoothAdapterStatusChangedEvent {
+        return BluetoothAdapterStatusChangedEvent(bluetoothAdapterStatus)
     }
 
     enum class Actions {
