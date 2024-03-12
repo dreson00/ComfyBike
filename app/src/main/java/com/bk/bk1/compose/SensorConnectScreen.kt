@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,26 +34,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.bk.bk1.utilities.BluetoothScanService
 import com.bk.bk1.viewModels.SensorConnectScreenViewModel
 
 @SuppressLint("MissingPermission")
 @Composable
-fun SensorConnectScreen(navController: NavController, sensorServiceStarter: (address: String) -> Unit) {
+fun SensorConnectScreen(viewModel: SensorConnectScreenViewModel, navController: NavController, sensorServiceStarter: (address: String) -> Unit) {
     val context = LocalContext.current
-    val btService = remember { BluetoothScanService(context) }
+//    val btService = remember { BluetoothScanManager(context) }
 
-    val viewModel = viewModel<SensorConnectScreenViewModel>(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return SensorConnectScreenViewModel(btService) as T
-            }
-        }
-    )
+//    val viewModel = viewModel<SensorConnectScreenViewModel>(
+//        factory = object : ViewModelProvider.Factory {
+//            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//                return SensorConnectScreenViewModel(btService) as T
+//            }
+//        }
+//    )
 
     LaunchedEffect(viewModel) {
         viewModel.startScan()

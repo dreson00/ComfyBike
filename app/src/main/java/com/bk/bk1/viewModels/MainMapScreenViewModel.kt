@@ -3,7 +3,6 @@ package com.bk.bk1.viewModels
 
 import android.annotation.SuppressLint
 import android.location.Location
-import android.os.Looper
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -15,17 +14,19 @@ import com.bk.bk1.data.TrackRecordDao
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
 import com.bk.bk1.utilities.BusProvider
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.Priority
+import com.bk.bk1.utilities.LocationClient
 import com.squareup.otto.Subscribe
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @SuppressLint("MissingPermission")
-class MainMapScreenViewModel(
-    private val fLocationProviderClient: FusedLocationProviderClient,
+@HiltViewModel
+class MainMapScreenViewModel @Inject constructor(
+    private val locationClient: LocationClient,
     private val trackRecordDao: TrackRecordDao,
     private val comfortIndexRecordDao: ComfortIndexRecordDao
 ) : ViewModel() {
@@ -33,15 +34,15 @@ class MainMapScreenViewModel(
     var cameraFollow by mutableStateOf(true)
     var location = MutableLiveData<Location>(null)
 
-    private var locationRequest: LocationRequest =
-        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2500).apply {
-            setWaitForAccurateLocation(true)
-        }.build()
-    private var locationCallback: LocationCallback = object : LocationCallback() {
-        override fun onLocationResult(locationResult: LocationResult) {
-            location.postValue(locationResult.lastLocation)
-        }
-    }
+//    private var locationRequest: LocationRequest =
+//        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2500).apply {
+//            setWaitForAccurateLocation(true)
+//        }.build()
+//    private var locationCallback: LocationCallback = object : LocationCallback() {
+//        override fun onLocationResult(locationResult: LocationResult) {
+//            location.postValue(locationResult.lastLocation)
+//        }
+//    }
 
     var comfortIndexRecords = comfortIndexRecordDao.getAllRecords()
     val connectionStatus = MutableLiveData(0)
@@ -50,8 +51,14 @@ class MainMapScreenViewModel(
 
 
     init {
-        fLocationProviderClient
-            .requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+//        fLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        locationClient
+            .getLocationUpdates(500L)
+            .catch { e -> e.printStackTrace() }
+            .onEach { loc ->
+                location.postValue(loc)
+            }
+            .launchIn(viewModelScope)
         bus.register(this)
     }
 
@@ -74,7 +81,8 @@ class MainMapScreenViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        fLocationProviderClient.removeLocationUpdates(locationCallback)
+//        fLocationProviderClient.removeLocationUpdates(locationCallback)
+        locationClient.removeLocationUpdates()
         bus.unregister(this)
     }
 

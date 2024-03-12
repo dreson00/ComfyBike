@@ -6,23 +6,20 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.bk.bk1.compose.MainMapScreen
 import com.bk.bk1.compose.SensorConnectScreen
-import com.bk.bk1.data.TrackDatabase
 import com.bk.bk1.ui.theme.BK1Theme
 import com.bk.bk1.utilities.SensorService
 import com.bk.bk1.viewModels.MainMapScreenViewModel
-import com.google.android.gms.location.LocationServices
+import com.bk.bk1.viewModels.SensorConnectScreenViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val MY_PERMISSIONS_REQUEST_BLUETOOTH_AND_LOCATION = 1
@@ -34,18 +31,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             BK1Theme {
                 val navController = rememberNavController()
-                val context = LocalContext.current
-                val fusedLocationProviderClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-                val db = TrackDatabase.getDatabase(context)
                 NavHost(navController = navController, startDestination = "mapScreen") {
                     composable("mapScreen") {
-                        val viewModel = viewModel<MainMapScreenViewModel>(
-                            factory = object : ViewModelProvider.Factory {
-                                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                    return MainMapScreenViewModel(fusedLocationProviderClient, db.trackRecordDao, db.comfortIndexRecordDao) as T
-                                }
-                            }
-                        )
+                        val viewModel = hiltViewModel<MainMapScreenViewModel>()
                         val startSensorServiceWithAction: (String) -> Unit = {
                             Intent(applicationContext, SensorService::class.java)
                                 .also { intent ->
@@ -64,7 +52,8 @@ class MainActivity : ComponentActivity() {
                                     startService(intent)
                                 }
                         }
-                        SensorConnectScreen(navController, sensorServiceStarter)
+                        val viewModel = hiltViewModel<SensorConnectScreenViewModel>()
+                        SensorConnectScreen(viewModel, navController, sensorServiceStarter)
                     }
                 }
             }

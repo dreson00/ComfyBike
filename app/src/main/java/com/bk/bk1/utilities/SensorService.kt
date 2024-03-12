@@ -16,11 +16,15 @@ import com.bk.bk1.events.SensorAddressChangedEvent
 import com.google.android.gms.location.LocationServices
 import com.movesense.mds.Mds
 import com.squareup.otto.Produce
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import javax.inject.Inject
 
-class SensorService : Service() {
+
+@AndroidEntryPoint
+class SensorService() : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val channelId = "sensor_channel"
 
@@ -51,6 +55,9 @@ class SensorService : Service() {
         }
     }
 
+    @Inject
+    lateinit var db: TrackDatabase
+
 
     override fun onCreate() {
         super.onCreate()
@@ -60,7 +67,7 @@ class SensorService : Service() {
             applicationContext,
             LocationServices.getFusedLocationProviderClient(applicationContext)
         )
-        val db = TrackDatabase.getDatabase(applicationContext)
+//        val db = TrackDatabase.getDatabase(applicationContext)
         trackingManager = TrackingManager(
             serviceScope,
             db.comfortIndexRecordDao,

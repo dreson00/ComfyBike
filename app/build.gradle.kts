@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
+    id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -106,4 +107,11 @@ dependencies {
 
     //Event Bus
     implementation("com.squareup:otto:1.3.8")
+
+    //Dagger hilt
+    implementation("com.google.dagger:hilt-android:2.51")
+    kapt("com.google.dagger:hilt-android-compiler:2.51")
+    kapt("androidx.hilt:hilt-compiler:1.2.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
 }

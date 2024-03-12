@@ -6,11 +6,10 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
-import android.content.Context
 import androidx.lifecycle.MutableLiveData
+import javax.inject.Inject
 
-class BluetoothScanService(private val context: Context) {
-    private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+class BluetoothScanManager @Inject constructor(private val bluetoothManager: BluetoothManager) {
     private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
     private val leScanner = bluetoothAdapter?.bluetoothLeScanner
     private var scanCallback: ScanCallback? = null
