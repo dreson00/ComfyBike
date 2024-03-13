@@ -28,11 +28,11 @@ class TrackingManager(
     private val trackRecordDao: TrackRecordDao,
     private val locationClient: LocationClient
 ) {
+    private var trackingStatus = 0
     private var lastTrackId = 0
     private var lastTimestamp = 0
     private var oneSecondDataList = mutableListOf<LinearAcceleration>()
     private var location: Location? = null
-    private var trackingStatus = 0
     private val bus = BusProvider.getEventBus()
 
     fun startTracking() {

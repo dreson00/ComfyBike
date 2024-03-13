@@ -5,10 +5,19 @@ import android.graphics.Bitmap
 import android.location.Location
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -20,7 +29,9 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,10 +43,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.BlendModeColorFilterCompat
 import androidx.core.graphics.BlendModeCompat
@@ -74,6 +91,8 @@ fun MainMapScreen(
     val location: Location? by viewModel.location.observeAsState(null)
     val connectionStatus: Int by viewModel.connectionStatus.observeAsState(initial = 0)
     val trackingStatus: Int by viewModel.trackingStatus.observeAsState(initial = 0)
+    val isCountdownOn: Boolean by viewModel.isCountdownOn.observeAsState(initial = false)
+    val countDownProgress: Long by viewModel.countdownProgress.observeAsState(initial = 0L)
 
 
     LaunchedEffect(location) {
@@ -186,11 +205,95 @@ fun MainMapScreen(
                         }
                     }
                 }
-                Column {
-                    Text(
-                        text = "Connection: $connectionStatus",
-                        color = Color.Black
-                    )
+                Column(
+                    modifier = Modifier
+                        .padding(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .height(35.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.Black)
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Text(
+                            text = "Stav senzoru:",
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            textAlign = TextAlign.Center,
+                            style = TextStyle(
+                                platformStyle = PlatformTextStyle(includeFontPadding = false)
+                            )
+                        )
+
+                        val sensorStatusText = when(connectionStatus) {
+                            0 -> "Nepřipojen"
+                            1 -> "Připojování..."
+                            2 -> "Připojen"
+                            else -> "Chyba"
+                        }
+                        Text(
+                            text = sensorStatusText,
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 10.sp,
+                            style = TextStyle(
+                                platformStyle = PlatformTextStyle(includeFontPadding = false)
+                            )
+
+                        )
+
+                        if (isCountdownOn) {
+                            val animatedProgress by animateFloatAsState(
+                                targetValue = countDownProgress.toFloat() / 60000,
+                                animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+                                label = ""
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.CenterVertically)
+                            ) {
+                                CircularProgressIndicator(
+                                    progress = animatedProgress,
+                                    strokeWidth = 2.dp,
+                                    color = Color(0xFFFFA500),
+                                    modifier = Modifier
+                                        .size(15.dp)
+                                )
+                                Text(
+                                    text = "${countDownProgress / 1000}",
+                                    color = Color.White,
+                                    style = TextStyle(
+                                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                                    ),
+                                    fontSize = 8.sp,
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                )
+                            }
+
+                        }
+                        else {
+                            val sensorStatusColor = when(connectionStatus) {
+                                -1 -> Color.Red
+                                0 -> Color.Red
+                                1 -> Color(0xFFFFA500)
+                                2 -> Color.Green
+                                else -> Color.Gray
+                            }
+                            Surface(
+                                color = sensorStatusColor,
+                                shape = CircleShape,
+                                modifier = Modifier
+                                    .size(15.dp)
+                                    .align(Alignment.CenterVertically),
+                                content = {}
+                            )
+                        }
+                    }
                 }
                 FloatingActionButton(
                     modifier = Modifier
@@ -252,4 +355,97 @@ fun bitmapDescriptorFromVector(
 
 fun mapFloatToHue(value: Float): Float {
     return value * 130
+}
+
+@Composable
+@Preview
+fun StatusBarPreview() {
+    val connectionStatus = 0
+    val isCountdownOn = true
+    val countDownProgress = 55000
+    Row(
+        modifier = Modifier
+            .height(35.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.Black)
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Text(
+            text = "Stav senzoru:",
+            color = Color.White,
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+            style = TextStyle(
+                platformStyle = PlatformTextStyle(includeFontPadding = false)
+            )
+        )
+
+        val sensorStatusText = when(connectionStatus) {
+            0 -> "Nepřipojen"
+            1 -> "Připojování..."
+            2 -> "Připojen"
+            else -> "Chyba"
+        }
+        Text(
+            text = sensorStatusText,
+            color = Color.White,
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 10.sp,
+            style = TextStyle(
+                platformStyle = PlatformTextStyle(includeFontPadding = false)
+            )
+
+        )
+
+        if (isCountdownOn) {
+            val animatedProgress by animateFloatAsState(
+                targetValue = countDownProgress.toFloat() / 60000,
+                animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+                label = ""
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+            ) {
+                CircularProgressIndicator(
+                    progress = animatedProgress,
+                    strokeWidth = 2.dp,
+                    color = Color(0xFFFFA500),
+                    modifier = Modifier
+                        .size(15.dp)
+                )
+                Text(
+                    text = "${countDownProgress / 1000}",
+                    color = Color.White,
+                    style = TextStyle(
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                    ),
+                    fontSize = 8.sp,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                )
+            }
+
+        }
+        else {
+            val sensorStatusColor = when(connectionStatus) {
+                -1 -> Color.Red
+                0 -> Color.Red
+                1 -> Color(0xFFFFA500)
+                2 -> Color.Green
+                else -> Color.Gray
+            }
+            Surface(
+                color = sensorStatusColor,
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(15.dp)
+                    .align(Alignment.CenterVertically),
+                content = {}
+            )
+        }
+    }
 }

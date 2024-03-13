@@ -3,6 +3,7 @@ package com.bk.bk1.viewModels
 
 import android.annotation.SuppressLint
 import android.location.Location
+import android.os.CountDownTimer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -34,26 +35,27 @@ class MainMapScreenViewModel @Inject constructor(
     var cameraFollow by mutableStateOf(true)
     var location = MutableLiveData<Location>(null)
 
-//    private var locationRequest: LocationRequest =
-//        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2500).apply {
-//            setWaitForAccurateLocation(true)
-//        }.build()
-//    private var locationCallback: LocationCallback = object : LocationCallback() {
-//        override fun onLocationResult(locationResult: LocationResult) {
-//            location.postValue(locationResult.lastLocation)
-//        }
-//    }
-
     var comfortIndexRecords = comfortIndexRecordDao.getAllRecords()
     val connectionStatus = MutableLiveData(0)
     private val bus = BusProvider.getEventBus()
     val trackingStatus = MutableLiveData(0)
+    val isCountdownOn: MutableLiveData<Boolean> = MutableLiveData(false)
+    val countdownProgress = MutableLiveData(-1L)
+    val countDownMaxValue = 15000L
+    private val timer = object: CountDownTimer(countDownMaxValue, 500) {
+        override fun onTick(millisUntilFinished: Long) {
+            countdownProgress.postValue(millisUntilFinished)
+        }
+        override fun onFinish() {
+            isCountdownOn.postValue(false)
+        }
+    }
+
 
 
     init {
-//        fLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
         locationClient
-            .getLocationUpdates(500L)
+            .getLocationUpdates(1000L)
             .catch { e -> e.printStackTrace() }
             .onEach { loc ->
                 location.postValue(loc)
@@ -81,7 +83,6 @@ class MainMapScreenViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-//        fLocationProviderClient.removeLocationUpdates(locationCallback)
         locationClient.removeLocationUpdates()
         bus.unregister(this)
     }
@@ -95,6 +96,18 @@ class MainMapScreenViewModel @Inject constructor(
     @Subscribe
     fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
         connectionStatus.postValue(event.connectionStatus)
+
+        if (event.connectionStatus <= 0 && !isCountdownOn.value!!) {
+            isCountdownOn.postValue(true)
+            countdownProgress.postValue(countDownMaxValue)
+            timer.start()
+        }
+
+        else if (event.connectionStatus > 0 && isCountdownOn.value!!) {
+            isCountdownOn.postValue(false)
+            timer.cancel()
+            countdownProgress.postValue(-1L)
+        }
     }
 
     @Subscribe
