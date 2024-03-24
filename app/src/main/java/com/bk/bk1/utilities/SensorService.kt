@@ -11,14 +11,9 @@ import com.bk.bk1.R
 import com.bk.bk1.data.TrackDatabase
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.SensorAddressChangedEvent
-import com.google.android.gms.location.LocationServices
-import com.movesense.mds.Mds
 import com.squareup.otto.Produce
 import com.squareup.otto.Subscribe
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import javax.inject.Inject
 
 
@@ -26,32 +21,16 @@ import javax.inject.Inject
 class SensorService() : Service() {
     @Inject
     lateinit var db: TrackDatabase
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val channelId = "sensor_channel"
-
-    private lateinit var mds: Mds
-    private lateinit var sensorManager: SensorManager
-    private lateinit var trackingManager: TrackingManager
+    @Inject
+    lateinit var sensorManager: SensorManager
+    @Inject
+    lateinit var trackingManager: TrackingManager
 
     private val bus = BusProvider.getEventBus()
+    private var isRegisteredForBus = false
     private var sensorAddress = String()
     private val handler = Handler(Looper.getMainLooper())
 
-
-    override fun onCreate() {
-        super.onCreate()
-        mds = Mds.builder().build(applicationContext)
-        sensorManager = SensorManager(mds)
-        val locationClient = DefaultLocationClient(
-            applicationContext,
-            LocationServices.getFusedLocationProviderClient(applicationContext)
-        )
-        trackingManager = TrackingManager(
-            serviceScope,
-            db.comfortIndexRecordDao,
-            db.trackRecordDao,
-            locationClient)
-    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -72,9 +51,12 @@ class SensorService() : Service() {
     }
 
     private fun startService() {
-        bus.register(this)
+        if (!isRegisteredForBus) {
+            isRegisteredForBus = true
+            bus.register(this)
+        }
         val notification =
-            NotificationCompat.Builder(this, channelId)
+            NotificationCompat.Builder(this, "sensor_channel")
                 .setContentTitle("Sensor Service")
                 .setContentText("Running...")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -89,7 +71,15 @@ class SensorService() : Service() {
         sensorAddress = String()
         bus.post(produceSensorAddressEvent())
         bus.unregister(this)
+        isRegisteredForBus = false
         stopSelf()
+    }
+
+    private fun pauseForDisconnectService() {
+        stopTracking()
+        handler.removeCallbacksAndMessages(null)
+        sensorAddress = String()
+
     }
 
     private fun startTracking() {
@@ -105,7 +95,7 @@ class SensorService() : Service() {
     @Subscribe
     fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
         if (event.connectionStatus <= 0) {
-            handler.postDelayed(::stopService, 15000)
+            handler.postDelayed(::stopTracking, 60000)
         }
         if (event.connectionStatus > 0) {
             handler.removeCallbacksAndMessages(null)

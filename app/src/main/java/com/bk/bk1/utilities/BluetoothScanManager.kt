@@ -4,20 +4,21 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
+import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import androidx.lifecycle.MutableLiveData
 import javax.inject.Inject
 
 class BluetoothScanManager @Inject constructor(private val bluetoothManager: BluetoothManager) {
-    private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
-    private val leScanner = bluetoothAdapter?.bluetoothLeScanner
     private var scanCallback: ScanCallback? = null
-
+    private var leScanner: BluetoothLeScanner? = null
     val devicesLiveData: MutableLiveData<List<BluetoothDevice>> = MutableLiveData()
 
     @SuppressLint("MissingPermission")
     fun startScan() {
+        val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
+        leScanner = bluetoothAdapter?.bluetoothLeScanner
         scanCallback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 super.onScanResult(callbackType, result)
@@ -39,6 +40,6 @@ class BluetoothScanManager @Inject constructor(private val bluetoothManager: Blu
     @SuppressLint("MissingPermission")
     fun stopScan() {
         leScanner?.stopScan(scanCallback)
-        devicesLiveData.value = emptyList()
+        devicesLiveData.postValue(emptyList())
     }
 }

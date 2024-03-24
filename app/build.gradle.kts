@@ -114,4 +114,11 @@ dependencies {
     kapt("androidx.hilt:hilt-compiler:1.2.0")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
+    //Dropdown menu
+    implementation("me.saket.cascade:cascade:2.3.0")
+    implementation("me.saket.cascade:cascade-compose:2.3.0")
+
+    //Screenshot
+    implementation("com.github.SmartToolFactory:Compose-Screenshot:1.0.3")
+
 }

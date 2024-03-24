@@ -1,33 +1,46 @@
 package com.bk.bk1
 
 import android.Manifest
+import android.bluetooth.BluetoothAdapter
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.bk.bk1.compose.MainMapScreen
+import com.bk.bk1.compose.MapScreenshotterScreen
 import com.bk.bk1.compose.SensorConnectScreen
+import com.bk.bk1.compose.TrackListScreen
 import com.bk.bk1.ui.theme.BK1Theme
+import com.bk.bk1.utilities.BluetoothStateReceiver
 import com.bk.bk1.utilities.SensorService
 import com.bk.bk1.viewModels.MainMapScreenViewModel
+import com.bk.bk1.viewModels.MapScreenshotterScreenViewModel
 import com.bk.bk1.viewModels.SensorConnectScreenViewModel
+import com.bk.bk1.viewModels.TrackListScreenViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    @Inject
+    lateinit var bluetoothStateReceiver: BluetoothStateReceiver
     private val MY_PERMISSIONS_REQUEST_BLUETOOTH_AND_LOCATION = 1
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkPermissions()
+        val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+        registerReceiver(bluetoothStateReceiver, filter)
         setContent {
             BK1Theme {
                 val navController = rememberNavController()
@@ -55,12 +68,29 @@ class MainActivity : ComponentActivity() {
                         val viewModel = hiltViewModel<SensorConnectScreenViewModel>()
                         SensorConnectScreen(viewModel, navController, sensorServiceStarter)
                     }
+                    composable("trackList") {
+                        val viewModel = hiltViewModel<TrackListScreenViewModel>()
+                        TrackListScreen(viewModel, navController)
+                    }
+                    composable(
+                        "mapScreenshotterScreen/{trackId}",
+                        arguments = listOf(navArgument("trackId") {
+                            type = NavType.IntType
+                        })) { backStackEntry ->
+                        val viewModel = hiltViewModel<MapScreenshotterScreenViewModel>()
+                        MapScreenshotterScreen(
+                            viewModel,
+                            navController,
+                            backStackEntry.arguments?.getInt("trackId")
+                        )
+                    }
                 }
             }
         }
     }
 
     override fun onDestroy() {
+        unregisterReceiver(bluetoothStateReceiver)
         super.onDestroy()
     }
 
@@ -75,7 +105,8 @@ class MainActivity : ComponentActivity() {
             Manifest.permission.ACCESS_COARSE_LOCATION,
             Manifest.permission.ACCESS_BACKGROUND_LOCATION,
             Manifest.permission.POST_NOTIFICATIONS,
-            Manifest.permission.FOREGROUND_SERVICE
+            Manifest.permission.FOREGROUND_SERVICE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
         )
 
         ActivityCompat.requestPermissions(

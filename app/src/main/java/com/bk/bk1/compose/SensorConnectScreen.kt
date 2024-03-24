@@ -1,6 +1,7 @@
 package com.bk.bk1.compose
 
 import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,23 +41,23 @@ import com.bk.bk1.viewModels.SensorConnectScreenViewModel
 @SuppressLint("MissingPermission")
 @Composable
 fun SensorConnectScreen(viewModel: SensorConnectScreenViewModel, navController: NavController, sensorServiceStarter: (address: String) -> Unit) {
-    val context = LocalContext.current
-//    val btService = remember { BluetoothScanManager(context) }
-
-//    val viewModel = viewModel<SensorConnectScreenViewModel>(
-//        factory = object : ViewModelProvider.Factory {
-//            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-//                return SensorConnectScreenViewModel(btService) as T
-//            }
-//        }
-//    )
 
     LaunchedEffect(viewModel) {
         viewModel.startScan()
     }
 
-
     val devices by viewModel.devicesLiveData.observeAsState(initial = emptyList())
+    val isBluetoothAdapterOn: Boolean by viewModel.isBluetoothAdapterOn.observeAsState(initial = true)
+    val context = LocalContext.current
+
+    LaunchedEffect(isBluetoothAdapterOn) {
+        if (!isBluetoothAdapterOn) {
+            viewModel.stopScan()
+            Toast.makeText(context, "Bluetooth adaptér je vypnutý.", Toast.LENGTH_LONG).show()
+            navController.popBackStack()
+        }
+    }
+
 
     Scaffold(
         topBar = {
@@ -89,24 +90,26 @@ fun SensorConnectScreen(viewModel: SensorConnectScreenViewModel, navController: 
                         .padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(devices) { device ->
-                        Row(
-                            modifier = Modifier
-                                .clickable {
-                                    sensorServiceStarter(device.address)
-                                    viewModel.stopScan()
-                                    navController.popBackStack()
-                                }
-                                .height(70.dp)
-                                .fillMaxWidth()
-                                .border(2.dp, Color.Black, RoundedCornerShape(10.dp))
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color.LightGray)
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                    if (isBluetoothAdapterOn) {
+                        items(devices) { device ->
+                            Row(
+                                modifier = Modifier
+                                    .clickable {
+                                        sensorServiceStarter(device.address)
+                                        viewModel.stopScan()
+                                        navController.popBackStack()
+                                    }
+                                    .height(70.dp)
+                                    .fillMaxWidth()
+                                    .border(2.dp, Color.Black, RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color.LightGray)
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
 
-                        ) {
-                            Text(device.name.toString())
+                                ) {
+                                Text(device.name.toString())
+                            }
                         }
                     }
                 }

@@ -16,7 +16,7 @@ interface ComfortIndexRecordDao {
     @Update
     suspend fun updateRecord(comfortIndexRecord: ComfortIndexRecord)
 
-    @Query("SELECT * FROM comfortIndexRecord WHERE id = :trackRecordId")
+    @Query("SELECT * FROM comfortIndexRecord WHERE trackRecordId = :trackRecordId")
     fun getRecordsByTrackId(trackRecordId: Int): Flow<List<ComfortIndexRecord>>
 
     @Query("SELECT * FROM comfortindexrecord")

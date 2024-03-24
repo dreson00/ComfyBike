@@ -3,6 +3,7 @@ package com.bk.bk1.compose
 import android.content.Context
 import android.graphics.Bitmap
 import android.location.Location
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateFloatAsState
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -64,10 +66,13 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapEffect
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -76,13 +81,15 @@ import com.leinardi.android.speeddial.compose.SpeedDial
 import com.leinardi.android.speeddial.compose.SpeedDialState
 
 @Composable
-@OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class,
+    MapsComposeExperimentalApi::class
+)
 fun MainMapScreen(
     navController: NavController,
     viewModel: MainMapScreenViewModel,
     startSensorServiceWithAction: (String) -> Unit
 ) {
-
+    val context = LocalContext.current
     var speedDialState by rememberSaveable { mutableStateOf(SpeedDialState.Collapsed) }
     var overlayVisible by rememberSaveable { mutableStateOf(speedDialState.isExpanded()) }
 
@@ -90,6 +97,7 @@ fun MainMapScreen(
 
     val location: Location? by viewModel.location.observeAsState(null)
     val connectionStatus: Int by viewModel.connectionStatus.observeAsState(initial = 0)
+    val isBluetoothAdapterOn: Boolean by viewModel.isBluetoothAdapterOn.observeAsState(initial = true)
     val trackingStatus: Int by viewModel.trackingStatus.observeAsState(initial = 0)
     val isCountdownOn: Boolean by viewModel.isCountdownOn.observeAsState(initial = false)
     val countDownProgress: Long by viewModel.countdownProgress.observeAsState(initial = 0L)
@@ -124,7 +132,14 @@ fun MainMapScreen(
                 if (connectionStatus == 0) {
                     item {
                         FabWithLabel(
-                            onClick = { navController.navigate("sensorConnectScreen") },
+                            onClick = {
+                                if (isBluetoothAdapterOn) {
+                                    navController.navigate("sensorConnectScreen")
+                                }
+                                else {
+                                    Toast.makeText(context, "Bluetooth adaptér je vypnutý.", Toast.LENGTH_LONG).show()
+                                }
+                            },
                             labelContent = { Text(text = "Připojit senzor") },
                         ) {
                             Icon(Icons.Default.Add, null)
@@ -175,6 +190,14 @@ fun MainMapScreen(
                         Icon(Icons.Default.Delete, null)
                     }
                 }
+                item {
+                    FabWithLabel(
+                        onClick = { navController.navigate("trackList") },
+                        labelContent = { Text(text = "Spravovat trasy") },
+                    ) {
+                        Icon(Icons.Default.Place, null)
+                    }
+                }
             }
         },
         content = { padding ->
@@ -185,6 +208,9 @@ fun MainMapScreen(
                     properties = MapProperties(isMyLocationEnabled = true),
                     cameraPositionState = cameraPositionState
                 ) {
+                    MapEffect { map ->
+                        map.setMapStyle(MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_no_poi))
+                    }
                     LaunchedEffect(cameraPositionState.isMoving) {
                         if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
                             viewModel.disableCameraFollow()
@@ -193,6 +219,8 @@ fun MainMapScreen(
                     }
                     val comfortIndexRecords = viewModel.comfortIndexRecords.collectAsState(initial = emptyList())
                     if (comfortIndexRecords.value.isNotEmpty()) {
+                        val zoom = cameraPositionState.position.zoom
+
                         comfortIndexRecords.value.forEach { item ->
                             val color = Color.hsl(mapFloatToHue(item.comfortIndex), 1f, 0.5f)
                             MapMarker(

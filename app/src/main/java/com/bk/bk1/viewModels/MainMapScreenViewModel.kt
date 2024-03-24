@@ -9,11 +9,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.bk.bk1.data.ComfortIndexRecordDao
 import com.bk.bk1.data.TrackRecordDao
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
+import com.bk.bk1.utilities.BluetoothStateUpdater
 import com.bk.bk1.utilities.BusProvider
 import com.bk.bk1.utilities.LocationClient
 import com.squareup.otto.Subscribe
@@ -29,7 +31,8 @@ import javax.inject.Inject
 class MainMapScreenViewModel @Inject constructor(
     private val locationClient: LocationClient,
     private val trackRecordDao: TrackRecordDao,
-    private val comfortIndexRecordDao: ComfortIndexRecordDao
+    private val comfortIndexRecordDao: ComfortIndexRecordDao,
+    private val bluetoothStateUpdater: BluetoothStateUpdater
 ) : ViewModel() {
 
     var cameraFollow by mutableStateOf(true)
@@ -37,11 +40,12 @@ class MainMapScreenViewModel @Inject constructor(
 
     var comfortIndexRecords = comfortIndexRecordDao.getAllRecords()
     val connectionStatus = MutableLiveData(0)
+    val isBluetoothAdapterOn = bluetoothStateUpdater.bluetoothState.asLiveData()
     private val bus = BusProvider.getEventBus()
     val trackingStatus = MutableLiveData(0)
     val isCountdownOn: MutableLiveData<Boolean> = MutableLiveData(false)
     val countdownProgress = MutableLiveData(-1L)
-    val countDownMaxValue = 15000L
+    val countDownMaxValue = 60000L
     private val timer = object: CountDownTimer(countDownMaxValue, 500) {
         override fun onTick(millisUntilFinished: Long) {
             countdownProgress.postValue(millisUntilFinished)
@@ -50,7 +54,6 @@ class MainMapScreenViewModel @Inject constructor(
             isCountdownOn.postValue(false)
         }
     }
-
 
 
     init {
@@ -97,7 +100,7 @@ class MainMapScreenViewModel @Inject constructor(
     fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
         connectionStatus.postValue(event.connectionStatus)
 
-        if (event.connectionStatus <= 0 && !isCountdownOn.value!!) {
+        if (event.connectionStatus <= 0 && trackingStatus.value == 1 && !isCountdownOn.value!!) {
             isCountdownOn.postValue(true)
             countdownProgress.postValue(countDownMaxValue)
             timer.start()

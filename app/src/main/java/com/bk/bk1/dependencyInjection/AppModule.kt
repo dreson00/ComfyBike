@@ -4,6 +4,12 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import androidx.room.Room
 import com.bk.bk1.data.TrackDatabase
+import com.bk.bk1.utilities.BluetoothScanManager
+import com.bk.bk1.utilities.BluetoothStateReceiver
+import com.bk.bk1.utilities.BluetoothStateUpdater
+import com.bk.bk1.utilities.ExportManager
+import com.bk.bk1.utilities.SensorManager
+import com.movesense.mds.Mds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -43,5 +49,51 @@ object AppModule {
         @ApplicationContext context: Context
     ) = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
 
+    @Singleton
+    @Provides
+    fun provideBluetoothScanManager(
+        bluetoothManager: BluetoothManager
+    ) = BluetoothScanManager(bluetoothManager)
+
+    @Singleton
+    @Provides
+    fun provideMds(
+        @ApplicationContext context: Context
+    ): Mds {
+        return Mds.builder().build(context)
+    }
+
+    @Singleton
+    @Provides
+    fun provideSensorManager(
+        mds: Mds,
+        bluetoothManager: BluetoothManager
+    ): SensorManager {
+        return SensorManager(mds, bluetoothManager)
+    }
+
+    @Singleton
+    @Provides
+    fun provideBluetoothStateUpdater(
+        bluetoothManager: BluetoothManager
+    ): BluetoothStateUpdater {
+        return BluetoothStateUpdater(bluetoothManager)
+    }
+
+    @Singleton
+    @Provides
+    fun provideBluetoothStateReceiver(
+        bluetoothStateUpdater: BluetoothStateUpdater
+    ): BluetoothStateReceiver {
+        return BluetoothStateReceiver(bluetoothStateUpdater)
+    }
+
+    @Singleton
+    @Provides
+    fun provideFileManager(
+        @ApplicationContext context: Context
+    ): ExportManager {
+        return ExportManager(context)
+    }
 
 }

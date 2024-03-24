@@ -1,5 +1,6 @@
 package com.bk.bk1.utilities
 
+import android.bluetooth.BluetoothManager
 import com.bk.bk1.data.SensorNotificationListener
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.SensorAddressChangedEvent
@@ -8,21 +9,28 @@ import com.bk.bk1.models.BluetoothDeviceInfo
 import com.movesense.mds.Mds
 import com.movesense.mds.MdsSubscription
 import com.squareup.otto.Subscribe
+import javax.inject.Inject
 
-class SensorManager(
+class SensorManager @Inject constructor(
     private var mds: Mds,
+    private var bluetoothManager: BluetoothManager
 ) {
-
     private var mdsSubscription: MdsSubscription? = null
+    private var sensorConnectionListener = SensorConnectionListener()
     private var sensorNotificationListener = SensorNotificationListener()
     private val deviceInfo: BluetoothDeviceInfo = BluetoothDeviceInfo(null, String(), 0)
     private val bus = BusProvider.getEventBus()
-    private val sensorConnectionListener = SensorConnectionListener()
     private var isSubscribed = false
+    private var isRegisteredForBus = false
+
 
     fun connectToSensor(sensorAddress: String) {
-        bus.register(this)
-        bus.register(sensorConnectionListener)
+        if (!isRegisteredForBus) {
+            bus.register(this)
+            bus.register(sensorConnectionListener)
+            isRegisteredForBus = true
+        }
+
         mds.connect(sensorAddress, sensorConnectionListener)
     }
 
@@ -33,11 +41,12 @@ class SensorManager(
         }
         bus.unregister(this)
         bus.unregister(sensorConnectionListener)
+        isRegisteredForBus = false
     }
 
     fun subscribe() {
         bus.register(sensorNotificationListener)
-        mdsSubscription = mds.subscribe(
+        mdsSubscription = mds?.subscribe(
             "suunto://MDS/EventListener",
             "{\"Uri\": \"${deviceInfo.serialNumber}/Meas/Acc/26\"}",
             sensorNotificationListener

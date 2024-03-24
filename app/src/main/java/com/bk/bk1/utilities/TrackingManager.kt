@@ -11,6 +11,8 @@ import com.bk.bk1.models.TrackRecord
 import com.squareup.otto.Produce
 import com.squareup.otto.Subscribe
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -19,11 +21,11 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-class TrackingManager(
-    private val scope: CoroutineScope,
+class TrackingManager @Inject constructor(
     private val comfortIndexRecordDao: ComfortIndexRecordDao,
     private val trackRecordDao: TrackRecordDao,
     private val locationClient: LocationClient
@@ -33,6 +35,7 @@ class TrackingManager(
     private var lastTimestamp = 0
     private var oneSecondDataList = mutableListOf<LinearAcceleration>()
     private var location: Location? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val bus = BusProvider.getEventBus()
 
     fun startTracking() {
