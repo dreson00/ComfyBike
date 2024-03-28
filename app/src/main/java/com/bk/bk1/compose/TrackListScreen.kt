@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalAnimationApi::class)
+@file:OptIn(ExperimentalAnimationApi::class, ExperimentalPermissionsApi::class)
 
 package com.bk.bk1.compose
 
@@ -51,7 +51,10 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.bk.bk1.ui.theme.BK1Theme
+import com.bk.bk1.utilities.getExternalStoragePermissionList
 import com.bk.bk1.viewModels.TrackListScreenViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
@@ -63,6 +66,23 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
     val tracks by viewModel.tracks.observeAsState(emptyList())
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    val externalStoragePermissionsState = rememberMultiplePermissionsState(
+        permissions = getExternalStoragePermissionList()
+    )
+    val showExternalStorageRequest = remember { mutableStateOf(false) }
+
+    if (showExternalStorageRequest.value) {
+        PermissionRequestDialog(
+            messageText = "Pro exportování tras je nutné oprávnění pro přístup k úložišti.",
+            onConfirm = {
+                externalStoragePermissionsState.launchMultiplePermissionRequest()
+            },
+            onDismiss = {
+                showExternalStorageRequest.value = false
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -144,25 +164,37 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                                             androidx.compose.material.DropdownMenuItem(
                                                 content = { Text(text = "CSV") },
                                                 onClick = {
-                                                    scope.launch {
-                                                        val success = viewModel.saveCiRecordsAsCsv(track)
-                                                        val message = if (success == 0) {
-                                                            "CSV soubor byl uložen do složky Documents/ComfyBike."
-                                                        } else {
-                                                            "Při exportu se vyskytla chyba."
+                                                    if (!externalStoragePermissionsState.allPermissionsGranted) {
+                                                        scope.launch {
+                                                            val success = viewModel.saveCiRecordsAsCsv(track)
+                                                            val message = if (success == 0) {
+                                                                "CSV soubor byl uložen do složky Documents/ComfyBike."
+                                                            } else {
+                                                                "Při exportu se vyskytla chyba."
+                                                            }
+                                                            Toast.makeText(
+                                                                context,
+                                                                message,
+                                                                Toast.LENGTH_LONG
+                                                            ).show()
                                                         }
-                                                        Toast.makeText(
-                                                            context,
-                                                            message,
-                                                            Toast.LENGTH_LONG
-                                                        ).show()
+                                                        expanded = !expanded
                                                     }
-                                                    expanded = !expanded
+                                                    else {
+                                                        showExternalStorageRequest.value = true
+                                                    }
                                                 }
                                             )
                                             androidx.compose.material.DropdownMenuItem(
                                                 content = { Text(text = "Obrázek") },
-                                                onClick =  { navController.navigate("mapScreenshotterScreen/${track.id}") }
+                                                onClick =  {
+                                                    if (!externalStoragePermissionsState.allPermissionsGranted) {
+                                                        navController.navigate("mapScreenshotterScreen/${track.id}")
+                                                    }
+                                                    else {
+                                                        showExternalStorageRequest.value = true
+                                                    }
+                                                }
                                             )
                                         }
                                     )
@@ -173,6 +205,7 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                                                 content = { Text(text = "Potvrdit") },
                                                 onClick = {
                                                     viewModel.deleteTrack(track)
+                                                    expanded = !expanded
                                                 }
                                             )
                                             androidx.compose.material.DropdownMenuItem(

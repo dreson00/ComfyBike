@@ -8,5 +8,7 @@ interface LocationClient {
 
     fun removeLocationUpdates()
 
-    class LocationExcepetion(message: String): Exception()
+    fun isReceivingLocationUpdates(): Boolean
+
+    class LocationException(message: String): Exception()
 }

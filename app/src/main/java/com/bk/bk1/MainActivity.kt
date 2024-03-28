@@ -4,6 +4,7 @@ import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import android.content.IntentFilter
+import android.location.LocationManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,6 +22,7 @@ import com.bk.bk1.compose.TrackDetailScreen
 import com.bk.bk1.compose.TrackListScreen
 import com.bk.bk1.ui.theme.BK1Theme
 import com.bk.bk1.utilities.BluetoothStateReceiver
+import com.bk.bk1.utilities.LocationStateReceiver
 import com.bk.bk1.utilities.SensorService
 import com.bk.bk1.viewModels.MainMapScreenViewModel
 import com.bk.bk1.viewModels.MapScreenshotterScreenViewModel
@@ -35,13 +37,17 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var bluetoothStateReceiver: BluetoothStateReceiver
-    private val MY_PERMISSIONS_REQUEST_BLUETOOTH_AND_LOCATION = 1
+
+    @Inject
+    lateinit var locationStateReceiver: LocationStateReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkPermissions()
-        val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
-        registerReceiver(bluetoothStateReceiver, filter)
+        val bluetoothStateReceiverFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+        registerReceiver(bluetoothStateReceiver, bluetoothStateReceiverFilter)
+        val locationStateReceiverFiler = IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION)
+        registerReceiver(locationStateReceiver, locationStateReceiverFiler)
         setContent {
             BK1Theme(darkTheme = false) {
                 val navController = rememberNavController()
@@ -104,22 +110,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         unregisterReceiver(bluetoothStateReceiver)
+        unregisterReceiver(locationStateReceiver)
         super.onDestroy()
     }
 
     private fun checkPermissions() {
         val permissions = arrayOf(
             Manifest.permission.INTERNET, // installation permission
-            Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN,
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-            Manifest.permission.POST_NOTIFICATIONS,
-            Manifest.permission.FOREGROUND_SERVICE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
         )
 
         ActivityCompat.requestPermissions(
@@ -127,41 +124,5 @@ class MainActivity : ComponentActivity() {
             permissions,
             0
         )
-//        val permissions = mutableListOf<String>()
-//
-//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN)
-//            != PackageManager.PERMISSION_GRANTED) {
-//            permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
-//            permissions.add(Manifest.permission.BLUETOOTH_SCAN)
-//            permissions.add(Manifest.permission.BLUETOOTH)
-//            permissions.add(Manifest.permission.BLUETOOTH_ADMIN)
-//        }
-//
-//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-//            != PackageManager.PERMISSION_GRANTED) {
-//            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
-//            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
-//        }
-//
-//        if (permissions.isNotEmpty()) {
-//            ActivityCompat.requestPermissions(
-//                this,
-//                permissions.toTypedArray(),
-//                MY_PERMISSIONS_REQUEST_BLUETOOTH_AND_LOCATION)
-//        }
     }
-
-//    @Deprecated("Deprecated in Java")
-//    @Suppress("DEPRECATION")
-//    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-//        when (requestCode) {
-//            MY_PERMISSIONS_REQUEST_BLUETOOTH_AND_LOCATION -> {
-//                if (!(grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-//                    checkPermissions()
-//                }
-//                return
-//            }
-//        }
-//    }
 }

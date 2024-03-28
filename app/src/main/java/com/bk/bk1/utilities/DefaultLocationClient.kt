@@ -19,7 +19,7 @@ class DefaultLocationClient(
     private val context: Context,
     private val client: FusedLocationProviderClient
 ): LocationClient {
-
+    private var isReceivingLocationUpdates = false
     private lateinit var locationCallback: LocationCallback
     @SuppressLint("MissingPermission")
     override fun getLocationUpdates(interval: Long): Flow<Location> {
@@ -28,7 +28,7 @@ class DefaultLocationClient(
             val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
             val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
             if (!isGpsEnabled && !isNetworkEnabled) {
-                throw LocationClient.LocationExcepetion("GPS is disabled")
+                throw LocationClient.LocationException("GPS is disabled")
             }
 
             val locationRequest: LocationRequest =
@@ -47,19 +47,28 @@ class DefaultLocationClient(
                 }
             }
 
+            LocationManager.MODE_CHANGED_ACTION
+
             client.requestLocationUpdates(
                 locationRequest,
                 locationCallback,
                 Looper.getMainLooper()
             )
+            isReceivingLocationUpdates = true
 
             awaitClose {
+                isReceivingLocationUpdates = false
                 removeLocationUpdates()
             }
         }
     }
 
+    override fun isReceivingLocationUpdates(): Boolean {
+        return isReceivingLocationUpdates
+    }
+
     override fun removeLocationUpdates() {
+        isReceivingLocationUpdates = false
         client.removeLocationUpdates(locationCallback)
     }
 

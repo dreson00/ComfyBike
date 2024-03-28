@@ -127,4 +127,7 @@ dependencies {
     implementation("com.patrykandpatrick.vico:compose-m3:2.0.0-alpha.12")
     implementation("com.patrykandpatrick.vico:core:2.0.0-alpha.12")
 
+    //Permissions
+    implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
+
 }

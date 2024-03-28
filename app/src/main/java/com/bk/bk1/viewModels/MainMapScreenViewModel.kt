@@ -2,6 +2,8 @@ package com.bk.bk1.viewModels
 
 
 import android.annotation.SuppressLint
+import android.app.Application
+import android.content.Context
 import android.location.Location
 import android.os.CountDownTimer
 import androidx.compose.runtime.getValue
@@ -18,6 +20,7 @@ import com.bk.bk1.events.TrackingStatusChangedEvent
 import com.bk.bk1.utilities.BluetoothStateUpdater
 import com.bk.bk1.utilities.BusProvider
 import com.bk.bk1.utilities.LocationClient
+import com.bk.bk1.utilities.LocationStateUpdater
 import com.squareup.otto.Subscribe
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.catch
@@ -29,18 +32,22 @@ import javax.inject.Inject
 @SuppressLint("MissingPermission")
 @HiltViewModel
 class MainMapScreenViewModel @Inject constructor(
+    private val application: Application,
     private val locationClient: LocationClient,
     private val trackRecordDao: TrackRecordDao,
     private val comfortIndexRecordDao: ComfortIndexRecordDao,
-    private val bluetoothStateUpdater: BluetoothStateUpdater
+    private val bluetoothStateUpdater: BluetoothStateUpdater,
+    private val locationStateUpdater: LocationStateUpdater
 ) : ViewModel() {
 
     var cameraFollow by mutableStateOf(true)
     var location = MutableLiveData<Location>(null)
+    val showLocationPermissionRequest = MutableLiveData<String>(null)
 
     var comfortIndexRecords = comfortIndexRecordDao.getAllRecords()
     val connectionStatus = MutableLiveData(0)
     val isBluetoothAdapterOn = bluetoothStateUpdater.bluetoothState.asLiveData()
+    val isLocationEnabled = locationStateUpdater.locationState.asLiveData()
     private val bus = BusProvider.getEventBus()
     val trackingStatus = MutableLiveData(0)
     val isCountdownOn: MutableLiveData<Boolean> = MutableLiveData(false)
@@ -54,17 +61,34 @@ class MainMapScreenViewModel @Inject constructor(
             isCountdownOn.postValue(false)
         }
     }
+    private val sharedPreferences = application
+        .getSharedPreferences("showLocationPermissionRequest", Context.MODE_PRIVATE)
 
 
     init {
-        locationClient
-            .getLocationUpdates(1000L)
-            .catch { e -> e.printStackTrace() }
-            .onEach { loc ->
-                location.postValue(loc)
-            }
-            .launchIn(viewModelScope)
+         showLocationPermissionRequest
+            .postValue(sharedPreferences.getString("showLocationPermissionRequest", "true"))
         bus.register(this)
+    }
+
+    fun disableLocationPermissionRequestDialog() {
+        with (sharedPreferences.edit()) {
+            putString("showLocationPermissionRequest", "false")
+            showLocationPermissionRequest.postValue("false")
+            apply()
+        }
+    }
+
+    fun enableLocationTracking() {
+        if (!locationClient.isReceivingLocationUpdates()) {
+            locationClient
+                .getLocationUpdates(1000L)
+                .catch { e -> e.printStackTrace() }
+                .onEach { loc ->
+                    location.postValue(loc)
+                }
+                .launchIn(viewModelScope)
+        }
     }
 
     fun toggleCameraFollow() {
