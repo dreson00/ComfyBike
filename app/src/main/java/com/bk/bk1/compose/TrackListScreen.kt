@@ -21,16 +21,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.twotone.MoreVert
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -48,11 +50,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.bk.bk1.ui.theme.BK1Theme
 import com.bk.bk1.viewModels.TrackListScreenViewModel
 import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavController) {
 
@@ -90,30 +94,37 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                         var expanded by remember { mutableStateOf(false) }
                         Row(
                             modifier = Modifier
-                                .clickable { }
+                                .clickable { navController.navigate("trackDetailScreen/${track.id}") }
                                 .height(70.dp)
                                 .fillMaxWidth()
                                 .border(2.dp, Color.Black, RoundedCornerShape(10.dp))
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(White)
-                                .padding(16.dp),
+                                .padding(PaddingValues(12.dp, 10.dp)),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
 
                         ) {
                             Column {
-                                Text("Trasa ${track.id}")
-                                Text(track.time)
+                                Text(
+                                    text = "Trasa ${track.id}"
+                                )
+                                Text(
+                                    text = track.time,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Gray
+                                )
                             }
-                            Button(
+                            ElevatedButton(
                                 onClick = {
                                     expanded = !expanded
                                 },
                                 shape = CircleShape,
                                 modifier = Modifier
                                     .size(40.dp),
+                                elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 5.dp),
                                 contentPadding = PaddingValues(1.dp),
-                                colors = ButtonDefaults.buttonColors(backgroundColor = White)
+                                colors = ButtonDefaults.buttonColors(containerColor = White)
 
                             ) {
                                 Icon(
@@ -135,7 +146,7 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                                                 onClick = {
                                                     scope.launch {
                                                         val success = viewModel.saveCiRecordsAsCsv(track)
-                                                        var message = if (success == 0) {
+                                                        val message = if (success == 0) {
                                                             "CSV soubor byl uložen do složky Documents/ComfyBike."
                                                         } else {
                                                             "Při exportu se vyskytla chyba."
@@ -185,87 +196,51 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
 @Preview
 @Composable
 fun TrackListItemPreview() {
-    Row(
-        modifier = Modifier
-            .clickable { }
-            .height(70.dp)
-            .fillMaxWidth()
-            .border(2.dp, Color.Black, RoundedCornerShape(10.dp))
-            .clip(RoundedCornerShape(10.dp))
-            .background(White)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    BK1Theme(darkTheme = false) {
+        Row(
+            modifier = Modifier
+                .clickable { }
+                .height(70.dp)
+                .fillMaxWidth()
+                .border(2.dp, Color.Black, RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(10.dp))
+                .background(White)
+                .padding(PaddingValues(12.dp, 10.dp)),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
 
         ) {
-        Column {
-            Text("Trasa ${10}")
-            Text("2024-03-19 13:17:20")
-        }
-        Button(
-            onClick = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
+                Text(
+                    text = "Trasa ${10}"
+                )
+                Text(
+                    text = "2024-03-19 13:17:20",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+            }
+            ElevatedButton(
+                onClick = {
 
-            },
-            shape = CircleShape,
-            modifier = Modifier
-                .size(40.dp),
-            contentPadding = PaddingValues(1.dp),
-            colors = ButtonDefaults.buttonColors(backgroundColor = White)
+                },
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(40.dp),
+                elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 5.dp),
+                contentPadding = PaddingValues(1.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = White)
 
             ) {
-            Icon(
-                Icons.TwoTone.MoreVert,
-                contentDescription = "Možnosti",
-                tint = Color.Black)
-            val state = rememberCascadeState()
-            var expanded by remember { mutableStateOf(false) }
-            CascadeDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                state = state
-            ) {
-                DropdownMenuItem(
-                    text = { Text(text = "Exportovat") },
-                    children = {
-                        DropdownMenuItem(
-                            text = { Text(text = "CSV") },
-                            children = { },
-                            modifier = Modifier
-                                .clickable {
-
-                                }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(text = "Obrázek") },
-                            children = { },
-                            modifier = Modifier
-                                .clickable {
-
-                                }
-                        )
-                    }
+                Icon(
+                    Icons.TwoTone.MoreVert,
+                    contentDescription = "Možnosti",
+                    tint = Color.Black
                 )
-                DropdownMenuItem(
-                    text = { Text(text = "Smazat") },
-                    children = {
-                        DropdownMenuItem(
-                            text = { Text(text = "Potvrdit") },
-                            children = { },
-                            modifier = Modifier
-                                .clickable {
-
-                                }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(text = "Zrušit") },
-                            children = { },
-                            modifier = Modifier
-                                .clickable {
-                                    state.navigateBack()
-                                }
-                        )
-                    }
-                )
+                val state = rememberCascadeState()
+                var expanded by remember { mutableStateOf(false) }
             }
         }
     }

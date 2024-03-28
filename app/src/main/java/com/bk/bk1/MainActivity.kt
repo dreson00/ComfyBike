@@ -4,7 +4,6 @@ import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +17,7 @@ import androidx.navigation.navArgument
 import com.bk.bk1.compose.MainMapScreen
 import com.bk.bk1.compose.MapScreenshotterScreen
 import com.bk.bk1.compose.SensorConnectScreen
+import com.bk.bk1.compose.TrackDetailScreen
 import com.bk.bk1.compose.TrackListScreen
 import com.bk.bk1.ui.theme.BK1Theme
 import com.bk.bk1.utilities.BluetoothStateReceiver
@@ -25,6 +25,7 @@ import com.bk.bk1.utilities.SensorService
 import com.bk.bk1.viewModels.MainMapScreenViewModel
 import com.bk.bk1.viewModels.MapScreenshotterScreenViewModel
 import com.bk.bk1.viewModels.SensorConnectScreenViewModel
+import com.bk.bk1.viewModels.TrackDetailScreenViewModel
 import com.bk.bk1.viewModels.TrackListScreenViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -42,7 +43,7 @@ class MainActivity : ComponentActivity() {
         val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
         registerReceiver(bluetoothStateReceiver, filter)
         setContent {
-            BK1Theme {
+            BK1Theme(darkTheme = false) {
                 val navController = rememberNavController()
                 NavHost(navController = navController, startDestination = "mapScreen") {
                     composable("mapScreen") {
@@ -84,6 +85,18 @@ class MainActivity : ComponentActivity() {
                             backStackEntry.arguments?.getInt("trackId")
                         )
                     }
+                    composable(
+                        "trackDetailScreen/{trackId}",
+                        arguments = listOf(navArgument("trackId") {
+                            type = NavType.IntType
+                        })) { backStackEntry ->
+                        val viewModel = hiltViewModel<TrackDetailScreenViewModel>()
+                        TrackDetailScreen(
+                            viewModel,
+                            navController,
+                            backStackEntry.arguments?.getInt("trackId")
+                        )
+                    }
                 }
             }
         }
@@ -96,7 +109,7 @@ class MainActivity : ComponentActivity() {
 
     private fun checkPermissions() {
         val permissions = arrayOf(
-            Manifest.permission.INTERNET,
+            Manifest.permission.INTERNET, // installation permission
             Manifest.permission.BLUETOOTH,
             Manifest.permission.BLUETOOTH_ADMIN,
             Manifest.permission.BLUETOOTH_SCAN,
@@ -138,17 +151,17 @@ class MainActivity : ComponentActivity() {
 //        }
     }
 
-    @Deprecated("Deprecated in Java")
-    @Suppress("DEPRECATION")
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            MY_PERMISSIONS_REQUEST_BLUETOOTH_AND_LOCATION -> {
-                if (!(grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                    checkPermissions()
-                }
-                return
-            }
-        }
-    }
+//    @Deprecated("Deprecated in Java")
+//    @Suppress("DEPRECATION")
+//    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+//        when (requestCode) {
+//            MY_PERMISSIONS_REQUEST_BLUETOOTH_AND_LOCATION -> {
+//                if (!(grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+//                    checkPermissions()
+//                }
+//                return
+//            }
+//        }
+//    }
 }
