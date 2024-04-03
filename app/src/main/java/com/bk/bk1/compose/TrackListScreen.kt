@@ -22,7 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.twotone.MoreVert
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
@@ -46,10 +46,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.bk.bk1.R
 import com.bk.bk1.ui.theme.BK1Theme
 import com.bk.bk1.utilities.getExternalStoragePermissionList
 import com.bk.bk1.viewModels.TrackListScreenViewModel
@@ -64,6 +67,7 @@ import me.saket.cascade.rememberCascadeState
 fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavController) {
 
     val tracks by viewModel.tracks.observeAsState(emptyList())
+    val currentTrackId by viewModel.currentTrackId.observeAsState(null)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -74,7 +78,7 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
 
     if (showExternalStorageRequest.value) {
         PermissionRequestDialog(
-            messageText = "Pro exportování tras je nutné oprávnění pro přístup k úložišti.",
+            messageText = stringResource(R.string.req_perm_storage),
             onConfirm = {
                 externalStoragePermissionsState.launchMultiplePermissionRequest()
             },
@@ -87,14 +91,17 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Seznam tras") },
+                title = { Text(stringResource(R.string.title_track_list)) },
                 navigationIcon = {
                     IconButton(
                         onClick = {
                             navController.popBackStack()
                         }
                     ) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Zpět")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.desc_back)
+                        )
                     }
                 }
             )
@@ -103,119 +110,145 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
             Column(
                 modifier = Modifier.padding(padding)
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(tracks) { track ->
-                        val state = rememberCascadeState()
-                        var expanded by remember { mutableStateOf(false) }
-                        Row(
-                            modifier = Modifier
-                                .clickable { navController.navigate("trackDetailScreen/${track.id}") }
-                                .height(70.dp)
-                                .fillMaxWidth()
-                                .border(2.dp, Color.Black, RoundedCornerShape(10.dp))
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(White)
-                                .padding(PaddingValues(12.dp, 10.dp)),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                if (tracks.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.info_no_tracks),
+                        color = Color.Gray,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
+                else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(tracks) { track ->
+                            if (track.id != currentTrackId) {
+                                val state = rememberCascadeState()
+                                var expanded by remember { mutableStateOf(false) }
+                                Row(
+                                    modifier = Modifier
+                                        .clickable { navController.navigate("trackDetailScreen/${track.id}") }
+                                        .height(70.dp)
+                                        .fillMaxWidth()
+                                        .border(2.dp, Color.Black, RoundedCornerShape(10.dp))
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(White)
+                                        .padding(PaddingValues(12.dp, 10.dp)),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
 
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Trasa ${track.id}"
-                                )
-                                Text(
-                                    text = track.time,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.Gray
-                                )
-                            }
-                            ElevatedButton(
-                                onClick = {
-                                    expanded = !expanded
-                                },
-                                shape = CircleShape,
-                                modifier = Modifier
-                                    .size(40.dp),
-                                elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 5.dp),
-                                contentPadding = PaddingValues(1.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = White)
-
-                            ) {
-                                Icon(
-                                    Icons.TwoTone.MoreVert,
-                                    contentDescription = "Možnosti",
-                                    tint = Color.Black)
-
-                                CascadeDropdownMenu(
-                                    expanded = expanded,
-                                    onDismissRequest = { expanded = false },
-                                    state = state,
-                                    offset = DpOffset(x = 20.dp, y = (-10).dp)
                                 ) {
-                                    DropdownMenuItem(
-                                        text = { Text(text = "Exportovat") },
-                                        children = {
-                                            androidx.compose.material.DropdownMenuItem(
-                                                content = { Text(text = "CSV") },
-                                                onClick = {
-                                                    if (!externalStoragePermissionsState.allPermissionsGranted) {
-                                                        scope.launch {
-                                                            val success = viewModel.saveCiRecordsAsCsv(track)
-                                                            val message = if (success == 0) {
-                                                                "CSV soubor byl uložen do složky Documents/ComfyBike."
-                                                            } else {
-                                                                "Při exportu se vyskytla chyba."
+                                    Column {
+                                        Text(
+                                            text = "${stringResource(R.string.label_track_x)} ${track.id}"
+                                        )
+                                        Text(
+                                            text = track.time,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                    ElevatedButton(
+                                        onClick = {
+                                            expanded = !expanded
+                                        },
+                                        shape = CircleShape,
+                                        modifier = Modifier
+                                            .size(40.dp),
+                                        elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 5.dp),
+                                        contentPadding = PaddingValues(1.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = White)
+
+                                    ) {
+                                        Icon(
+                                            Icons.TwoTone.MoreVert,
+                                            contentDescription = stringResource(R.string.btn_options),
+                                            tint = Color.Black)
+
+                                        CascadeDropdownMenu(
+                                            expanded = expanded,
+                                            onDismissRequest = { expanded = false },
+                                            state = state,
+                                            offset = DpOffset(x = 20.dp, y = (-10).dp)
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(stringResource(R.string.btn_export))
+                                                },
+                                                children = {
+                                                    androidx.compose.material.DropdownMenuItem(
+                                                        content = {
+                                                            Text(stringResource(R.string.btn_csv))
+                                                        },
+                                                        onClick = {
+                                                            if (!externalStoragePermissionsState.allPermissionsGranted) {
+                                                                scope.launch {
+                                                                    val success = viewModel.saveCiRecordsAsCsv(track)
+                                                                    val message = if (success == 0) {
+                                                                        context.getText(R.string.info_csv_exp_succ)
+                                                                    }
+                                                                    else {
+                                                                        context.getText(R.string.info_csv_exp_err)
+                                                                    }
+                                                                    Toast.makeText(
+                                                                        context,
+                                                                        message,
+                                                                        Toast.LENGTH_LONG
+                                                                    ).show()
+                                                                }
+                                                                expanded = !expanded
                                                             }
-                                                            Toast.makeText(
-                                                                context,
-                                                                message,
-                                                                Toast.LENGTH_LONG
-                                                            ).show()
+                                                            else {
+                                                                showExternalStorageRequest.value = true
+                                                            }
                                                         }
-                                                        expanded = !expanded
-                                                    }
-                                                    else {
-                                                        showExternalStorageRequest.value = true
-                                                    }
+                                                    )
+                                                    androidx.compose.material.DropdownMenuItem(
+                                                        content = {
+                                                            Text(stringResource(R.string.btn_img))
+                                                        },
+                                                        onClick =  {
+                                                            if (!externalStoragePermissionsState.allPermissionsGranted) {
+                                                                navController.navigate("mapScreenshotterScreen/${track.id}")
+                                                            }
+                                                            else {
+                                                                showExternalStorageRequest.value = true
+                                                            }
+                                                        }
+                                                    )
                                                 }
                                             )
-                                            androidx.compose.material.DropdownMenuItem(
-                                                content = { Text(text = "Obrázek") },
-                                                onClick =  {
-                                                    if (!externalStoragePermissionsState.allPermissionsGranted) {
-                                                        navController.navigate("mapScreenshotterScreen/${track.id}")
-                                                    }
-                                                    else {
-                                                        showExternalStorageRequest.value = true
-                                                    }
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(stringResource(R.string.btn_delete))
+                                                },
+                                                children = {
+                                                    androidx.compose.material.DropdownMenuItem(
+                                                        content = {
+                                                            Text(stringResource(R.string.btn_confirm))
+                                                        },
+                                                        onClick = {
+                                                            viewModel.deleteTrack(track)
+                                                            expanded = !expanded
+                                                        }
+                                                    )
+                                                    androidx.compose.material.DropdownMenuItem(
+                                                        content = {
+                                                            Text(stringResource(R.string.btn_cancel))
+                                                        },
+                                                        onClick = {
+                                                            state.navigateBack()
+                                                        }
+                                                    )
                                                 }
                                             )
                                         }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(text = "Smazat") },
-                                        children = {
-                                            androidx.compose.material.DropdownMenuItem(
-                                                content = { Text(text = "Potvrdit") },
-                                                onClick = {
-                                                    viewModel.deleteTrack(track)
-                                                    expanded = !expanded
-                                                }
-                                            )
-                                            androidx.compose.material.DropdownMenuItem(
-                                                content = { Text(text = "Zrušit") },
-                                                onClick = {
-                                                    state.navigateBack()
-                                                }
-                                            )
-                                        }
-                                    )
+                                    }
                                 }
                             }
                         }

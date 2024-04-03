@@ -38,9 +38,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.bk.bk1.R
 import com.bk.bk1.utilities.getBackgroundLocationServicePermissionList
 import com.bk.bk1.utilities.getPostNotificationsPermissionList
 import com.bk.bk1.viewModels.SensorConnectScreenViewModel
@@ -76,14 +78,18 @@ fun SensorConnectScreen(
     LaunchedEffect(isBluetoothAdapterOn) {
         if (!isBluetoothAdapterOn) {
             viewModel.stopScan()
-            Toast.makeText(context, "Bluetooth adaptér je vypnutý.", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                context.getText(R.string.warn_bt_off),
+                Toast.LENGTH_LONG
+            ).show()
             navController.popBackStack()
         }
     }
 
     if (showBackgroundServiceRequest.value) {
         PermissionRequestDialog(
-            messageText = "Pro připojení senzoru a běh na pozadí je nutné oprávnění. Na následující obrazovce vyberte \"Povolit vždy\".",
+            messageText = stringResource(R.string.req_perm_bg_loc),
             onConfirm = {
                 backgroundServicePermissionState.permissions.forEach {
                     it.launchPermissionRequest()
@@ -97,7 +103,7 @@ fun SensorConnectScreen(
 
     if (showPostNotificationRequest.value) {
         PermissionRequestDialog(
-            messageText = "Pro připojení senzoru a běh na pozadí je nutné povolit zasílání notifikací",
+            messageText = stringResource(R.string.req_perm_notif),
             onConfirm = {
                 postNotificationPermissionState.launchMultiplePermissionRequest()
             },
@@ -111,7 +117,7 @@ fun SensorConnectScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Připojit senzor") },
+                title = { Text(stringResource(R.string.title_connect_sensor)) },
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -119,7 +125,10 @@ fun SensorConnectScreen(
                             navController.popBackStack()
                         }
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.desc_back)
+                        )
                     }
                 }
             )
@@ -152,8 +161,7 @@ fun SensorConnectScreen(
                                             } else {
                                                 showBackgroundServiceRequest.value = true
                                             }
-                                        }
-                                        else {
+                                        } else {
                                             showPostNotificationRequest.value = true
                                         }
 

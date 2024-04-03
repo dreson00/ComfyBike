@@ -2,6 +2,9 @@
 
 package com.bk.bk1.compose
 
+import android.content.res.Configuration
+import android.text.Layout
+import android.text.TextUtils
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -9,13 +12,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
@@ -46,12 +52,15 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import com.bk.bk1.R
 import com.bk.bk1.models.ComfortIndexRecord
@@ -69,20 +78,25 @@ import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
 import com.patrykandpatrick.vico.compose.axis.rememberAxisLabelComponent
 import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
 import com.patrykandpatrick.vico.compose.chart.CartesianChartHost
+import com.patrykandpatrick.vico.compose.chart.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.chart.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.chart.layer.rememberLineSpec
 import com.patrykandpatrick.vico.compose.chart.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.chart.scroll.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.chart.zoom.rememberVicoZoomState
+import com.patrykandpatrick.vico.compose.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.component.rememberTextComponent
 import com.patrykandpatrick.vico.compose.component.shape.shader.verticalGradient
 import com.patrykandpatrick.vico.compose.dimensions.dimensionsOf
+import com.patrykandpatrick.vico.core.axis.formatter.DecimalFormatAxisValueFormatter
 import com.patrykandpatrick.vico.core.component.shape.Shapes
 import com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders
 import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.model.columnSeries
 import com.patrykandpatrick.vico.core.model.lineSeries
 import kotlinx.coroutines.launch
+import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.random.Random
@@ -118,6 +132,7 @@ fun TrackDetailScreen(
         )
     )
     val bottomSheetMove = remember { mutableStateOf(BottomSheetMoves.MovingDown) }
+    val orientation = LocalConfiguration.current.orientation
 
     BottomSheetScaffold(
         scaffoldState = bottomSheetScaffoldState,
@@ -129,18 +144,22 @@ fun TrackDetailScreen(
         sheetTonalElevation = 0.dp,
         containerColor = MaterialTheme.colorScheme.background,
         sheetContainerColor = Color.Transparent,
+        sheetContentColor = Color.Transparent,
         modifier = Modifier
             .fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Trasa $trackId") },
+                title = { Text("${stringResource(R.string.label_track_x)} $trackId") },
                 navigationIcon = {
                     IconButton(
                         onClick = {
                             navController.popBackStack()
                         }
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.desc_back)
+                        )
                     }
                 }
             )
@@ -148,21 +167,12 @@ fun TrackDetailScreen(
         content = {
             Column(
                 modifier = Modifier
-                    .padding(PaddingValues(15.dp, 15.dp, 15.dp, 30.dp))
-                    .fillMaxSize(),
+                    .padding(PaddingValues(15.dp, 15.dp, 15.dp, 5.dp))
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(15.dp)
             ) {
-                ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 5.dp),
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(10.dp)
-                    ) {
+                TrackDetailCard {
                         val dbFormatter =
                             SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                         val date = dbFormatter.parse(trackRecord.value!!.time)
@@ -170,93 +180,24 @@ fun TrackDetailScreen(
                             SimpleDateFormat("d. MMMM yyyy HH:mm:ss", Locale.forLanguageTag("cs"))
                         val outputDateString = date?.let { outputFormatter.format(it) }
                         Text(
-                            text = "Čas záznamu: $outputDateString"
+                            text = "${stringResource(R.string.record_time_x)} $outputDateString"
                         )
                         Text(
-                            text = "Počet záznamů: ${comfortIndexRecords.value.count()}"
+                            text = "${stringResource(R.string.record_count_x)} ${comfortIndexRecords.value.count()}"
                         )
-                    }
-
                 }
-                ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 5.dp),
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(10.dp)
-                    ) {
-                        val scrollState = rememberVicoScrollState()
-                        val zoomState = rememberVicoZoomState()
-                        val chartModelProducer = remember { CartesianChartModelProducer.build() }
-                        if (comfortIndexRecords.value.isNotEmpty()) {
-                            LaunchedEffect(comfortIndexRecords.value.first()) {
-                                chartModelProducer
-                                    .tryRunTransaction {
-                                        lineSeries {
-                                            series(
-                                                comfortIndexRecords.value.map { it.id - comfortIndexRecords.value.first().id + 1 },
-                                                comfortIndexRecords.value.map { it.comfortIndex }
-                                            )
-                                        }
-                                    }
-                            }
-                        }
-                        CartesianChartHost(
-                            scrollState = scrollState,
-                            zoomState = zoomState,
-                            chart =
-                            rememberCartesianChart(
-                                rememberLineCartesianLayer(
-                                    lines = listOf(
-                                        rememberLineSpec(
-                                            shader = DynamicShaders.verticalGradient(
-                                                arrayOf(Color.Green, Color.Yellow, Color.Red),
-                                            ),
-                                        )
-                                    )
-                                ),
-                                startAxis = rememberStartAxis(
-                                    title = "CI",
-                                    titleComponent = rememberTextComponent(
-                                        background = rememberShapeComponent(
-                                            shape = Shapes.pillShape,
-                                            color = MaterialTheme.colorScheme.primaryContainer
-                                        ),
-                                        padding = dimensionsOf(5.dp, 4.dp)
-                                    ),
-                                    label = rememberAxisLabelComponent(
-                                        color = Color.Black
-                                    )
-                                ),
-                                bottomAxis = rememberBottomAxis(
-                                    title = "Čísla záznamů",
-                                    titleComponent = rememberTextComponent(
-                                        background = rememberShapeComponent(
-                                            shape = Shapes.pillShape,
-                                            color = MaterialTheme.colorScheme.primaryContainer
-                                        ),
-                                        padding = dimensionsOf(5.dp, 4.dp),
-                                    ),
-                                    label = rememberAxisLabelComponent(
-                                        color = Color.Black
-                                    )
-                                ),
-                            ),
-                            marker = rememberMarker(),
-                            modelProducer = chartModelProducer
-                        )
-                    }
+                TrackDetailCard {
+                    TrackProgressLineChart(comfortIndexRecords)
+                }
+                TrackDetailCard {
+                    CiDistributionColumnChart(comfortIndexRecords)
                 }
             }
         },
         sheetContent = {
             val spacing: Dp by animateDpAsState(
                 if (bottomSheetMove.value == BottomSheetMoves.MovingDown)
-                    35.dp else 10.dp, label = "Bottom sheet spacing animation",
+                    35.dp else (-70).dp, label = "Bottom sheet spacing animation",
                 animationSpec = spring()
             )
             Column(
@@ -267,27 +208,43 @@ fun TrackDetailScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(spacing)
             ) {
-                ElevatedButton(
-                    modifier = Modifier.size(58.dp),
-                    shape = CircleShape,
-                    contentPadding = PaddingValues(1.dp),
-                    colors = ButtonDefaults.elevatedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    onClick = {
-                        scope.launch {
-                            toggleBottomSheet(
-                                bottomSheetScaffoldState.bottomSheetState,
-                                bottomSheetMove
-                            )
-                        }
+                Row(
+                    modifier = Modifier
+                        .padding(end = 15.dp)
+                        .zIndex(2f)
+                        .fillMaxWidth(),
+                    horizontalArrangement =
+                    if(orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                        Arrangement.End
+                    }
+                    else {
+                        Arrangement.Center
                     }
                 ) {
-                    Icon(
-                        painterResource(R.drawable.outline_map_24),
-                        contentDescription = "Toggle map",
-                        tint = Color.Black
-                    )
+                    ElevatedButton(
+                        modifier = Modifier
+                            .size(58.dp)
+                            .zIndex(2f),
+                        shape = CircleShape,
+                        contentPadding = PaddingValues(1.dp),
+                        colors = ButtonDefaults.elevatedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                        onClick = {
+                            scope.launch {
+                                toggleBottomSheet(
+                                    bottomSheetScaffoldState.bottomSheetState,
+                                    bottomSheetMove
+                                )
+                            }
+                        }
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.outline_map_24),
+                            contentDescription = stringResource(R.string.desc_toggle_map),
+                            tint = Color.Black
+                        )
+                    }
                 }
                 if (comfortIndexRecords.value.isNotEmpty()) {
                     val recordsValue = comfortIndexRecords.value
@@ -316,7 +273,7 @@ fun TrackDetailScreen(
                         MapMarker(
                             context = LocalContext.current,
                             position = LatLng(item.latitude, item.longitude),
-                            title = "CI: ${item.comfortIndex}",
+                            title = "${stringResource(R.string.ci_x)}${item.comfortIndex}",
                             color = color,
                             iconResourceId = R.drawable.baseline_circle_12
                         )
@@ -325,6 +282,26 @@ fun TrackDetailScreen(
             }
         }
     )
+}
+
+@Composable
+fun TrackDetailCard(
+    content: @Composable (() -> Unit)
+) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth(),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 5.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.background
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(10.dp)
+        ) {
+            content()
+        }
+    }
 }
 
 enum class BottomSheetMoves {
@@ -347,8 +324,8 @@ suspend fun toggleBottomSheet(
 }
 
 @Composable
-@Preview
-fun ChartCardPreview() {
+//@Preview
+fun LineChartCardPreview() {
     BK1Theme {
         val fakeRecords = remember { mutableListOf<ComfortIndexRecord>() }
         for (i in 0..30) {
@@ -435,11 +412,113 @@ fun ChartCardPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, MapsComposeExperimentalApi::class,
-    ExperimentalComposeUiApi::class
-)
 @Composable
-//@Preview(device = "spec:width=411dp,height=891dp,dpi=420,isRound=false,chinSize=0dp,orientation=landscape")
+//@Preview
+fun ColumnChartCardPreview() {
+    BK1Theme {
+        val fakeRecords = remember { mutableListOf<ComfortIndexRecord>() }
+        for (i in 0..100) {
+            fakeRecords
+                .add(
+                    ComfortIndexRecord(
+                        i.toLong(),
+                        Random.nextDouble(0.0, 1.0).toFloat(),
+                        trackRecordId = 1,
+                        latitude = 0.0,
+                        longitude = 0.0
+                    )
+                )
+        }
+        val intervals = List(10) { it * 0.1f..(it + 1) * 0.1f }
+        val counts = intervals.map { interval ->
+            fakeRecords.count { it.comfortIndex in interval }
+        }
+
+        ElevatedCard(
+            modifier = Modifier
+                .fillMaxWidth(),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 5.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.background
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(10.dp)
+            ) {
+                val scrollState = rememberVicoScrollState()
+                val zoomState = rememberVicoZoomState()
+                val chartModelProducer = remember { CartesianChartModelProducer.build() }
+                LaunchedEffect(Unit) {
+                    chartModelProducer
+                        .tryRunTransaction {
+                            columnSeries {
+                                series(
+                                    List(10) { it+1 },
+                                    counts
+                                )
+                            }
+                        }
+                }
+                CartesianChartHost(
+                    scrollState = scrollState,
+                    zoomState = zoomState,
+                    chart =
+                    rememberCartesianChart(
+                        rememberColumnCartesianLayer(
+                            columns = listOf(
+                                rememberLineComponent(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    10.dp,
+                                    Shapes.roundedCornerShape(35)
+                                )
+                            ),
+                            spacing = 40.dp,
+                        ),
+                        startAxis = rememberStartAxis(
+                            title = "Počet záznamů",
+                            titleComponent = rememberTextComponent(
+                                background = rememberShapeComponent(
+                                    shape = Shapes.pillShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer
+                                ),
+                                padding = dimensionsOf(5.dp, 4.dp)
+                            ),
+                            label = rememberAxisLabelComponent(
+                                color = Color.Black
+                            ),
+                            valueFormatter = DecimalFormatAxisValueFormatter(roundingMode = RoundingMode.CEILING)
+                        ),
+                        bottomAxis = rememberBottomAxis(
+                            title = "Rozsahy hodnot CI",
+                            titleComponent = rememberTextComponent(
+                                background = rememberShapeComponent(
+                                    shape = Shapes.pillShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                ),
+                                padding = dimensionsOf(5.dp, 4.dp),
+                                margins = dimensionsOf(top = 20.dp)
+                            ),
+                            valueFormatter = {
+                                value, _, _ -> "<0.${value.toInt() - 1}, 0.${value.toInt()})"
+                            },
+                            labelRotationDegrees = 0f,
+                            label = rememberAxisLabelComponent(
+                                ellipsize = TextUtils.TruncateAt.MARQUEE,
+                                textAlignment = Layout.Alignment.ALIGN_CENTER
+                            ),
+                        ),
+                    ),
+                    marker = rememberMarker(),
+                    modelProducer = chartModelProducer
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+@Preview(device = "spec:width=411dp,height=891dp,dpi=420,isRound=false,chinSize=0dp,orientation=landscape")
 //@Preview
 fun TrackDetailScreenPreview() {
     BK1Theme {
@@ -484,15 +563,16 @@ fun TrackDetailScreenPreview() {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(PaddingValues(15.dp, 15.dp, 15.dp, 30.dp)),
+                        .padding(PaddingValues(15.dp, 15.dp, 15.dp, 70.dp)),
                     verticalArrangement = Arrangement.spacedBy(15.dp)
                 ) {
                     ElevatedCard(
                         modifier = Modifier
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .fillMaxHeight(),
                         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 5.dp),
                         colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.background
+                            containerColor = MaterialTheme.colorScheme.tertiary
                         )
                     ) {
                         Column(
@@ -512,7 +592,7 @@ fun TrackDetailScreenPreview() {
             sheetContent = {
                 val spacing: Dp by animateDpAsState(
                     if (bottomSheetMove.value == BottomSheetMoves.MovingDown)
-                        25.dp else 10.dp, label = "Bottom sheet spacing animation",
+                        25.dp else (-70).dp, label = "Bottom sheet spacing animation",
                     animationSpec = spring()
                 )
                 Column(
@@ -520,30 +600,40 @@ fun TrackDetailScreenPreview() {
                         .background(Color.Transparent)
                         .padding(0.dp, 10.dp, 0.dp, 0.dp)
                         .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(spacing)
+                    verticalArrangement = Arrangement.spacedBy(spacing),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    ElevatedButton(
-                        modifier = Modifier.size(48.dp),
-                        shape = CircleShape,
-                        contentPadding = PaddingValues(1.dp),
-                        colors = ButtonDefaults.elevatedButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        ),
-                        onClick = {
-                            scope.launch {
-                                toggleBottomSheet(
-                                    bottomSheetScaffoldState.bottomSheetState,
-                                    bottomSheetMove
-                                )
-                            }
-                        }
+                    Row(
+                        modifier = Modifier
+                            .padding(end = 15.dp)
+                            .zIndex(2f)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Icon(
-                            painterResource(R.drawable.outline_map_24),
-                            contentDescription = "Toggle map",
-                            tint = Color.Black
-                        )
+                        ElevatedButton(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .zIndex(2f),
+                            shape = CircleShape,
+                            contentPadding = PaddingValues(1.dp),
+                            colors = ButtonDefaults.elevatedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            ),
+                            onClick = {
+                                scope.launch {
+                                    toggleBottomSheet(
+                                        bottomSheetScaffoldState.bottomSheetState,
+                                        bottomSheetMove
+                                    )
+                                }
+                            }
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.outline_map_24),
+                                contentDescription = "Toggle map",
+                                tint = Color.Black
+                            )
+                        }
                     }
                     Box(
                         modifier = Modifier
@@ -565,4 +655,3 @@ fun TrackDetailScreenPreview() {
         }
     }
 }
-

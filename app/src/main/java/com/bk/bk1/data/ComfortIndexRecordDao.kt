@@ -22,4 +22,11 @@ interface ComfortIndexRecordDao {
     @Query("SELECT * FROM comfortindexrecord")
     fun getAllRecords(): Flow<List<ComfortIndexRecord>>
 
+    @Query("SELECT * FROM ComfortIndexRecord WHERE trackRecordId NOT IN (:currentTrackId) GROUP BY trackRecordId")
+    fun getFirstComfortIndexRecordForAllExceptCurrent(currentTrackId: Int): Flow<List<ComfortIndexRecord>>
+
+    @Query("SELECT * FROM ComfortIndexRecord GROUP BY trackRecordId")
+    fun getFirstComfortIndexRecordForAll(): Flow<List<ComfortIndexRecord>>
+
+
 }

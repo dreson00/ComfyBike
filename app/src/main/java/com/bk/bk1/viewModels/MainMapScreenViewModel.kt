@@ -16,7 +16,9 @@ import androidx.lifecycle.viewModelScope
 import com.bk.bk1.data.ComfortIndexRecordDao
 import com.bk.bk1.data.TrackRecordDao
 import com.bk.bk1.events.ConnectionStatusChangedEvent
+import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
+import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.utilities.BluetoothStateUpdater
 import com.bk.bk1.utilities.BusProvider
 import com.bk.bk1.utilities.LocationClient
@@ -24,6 +26,7 @@ import com.bk.bk1.utilities.LocationStateUpdater
 import com.squareup.otto.Subscribe
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -44,7 +47,9 @@ class MainMapScreenViewModel @Inject constructor(
     var location = MutableLiveData<Location>(null)
     val showLocationPermissionRequest = MutableLiveData<String>(null)
 
-    var comfortIndexRecords = comfortIndexRecordDao.getAllRecords()
+    val currentTrackId = MutableLiveData<Int?>(null)
+    var currentComfortIndexRecordsFlow = emptyFlow<List<ComfortIndexRecord>>()
+    var firstComfortIndexRecordForAllExceptCurrent = emptyFlow<List<ComfortIndexRecord>>()
     val connectionStatus = MutableLiveData(0)
     val isBluetoothAdapterOn = bluetoothStateUpdater.bluetoothState.asLiveData()
     val isLocationEnabled = locationStateUpdater.locationState.asLiveData()
@@ -69,6 +74,9 @@ class MainMapScreenViewModel @Inject constructor(
          showLocationPermissionRequest
             .postValue(sharedPreferences.getString("showLocationPermissionRequest", "true"))
         bus.register(this)
+        if (currentTrackId.value == null) {
+            firstComfortIndexRecordForAllExceptCurrent = comfortIndexRecordDao.getFirstComfortIndexRecordForAll()
+        }
     }
 
     fun disableLocationPermissionRequestDialog() {
@@ -140,6 +148,22 @@ class MainMapScreenViewModel @Inject constructor(
     @Subscribe
     fun onTrackingStatusChanged(event: TrackingStatusChangedEvent) {
         trackingStatus.postValue(event.trackingStatus)
+    }
+
+    @Subscribe
+    fun onCurrentTrackIdChangedEvent(event: CurrentTrackIdChangedEvent) {
+        if (event.currentTrackId != null) {
+            currentComfortIndexRecordsFlow = comfortIndexRecordDao
+                .getRecordsByTrackId(event.currentTrackId)
+            firstComfortIndexRecordForAllExceptCurrent = comfortIndexRecordDao
+                .getFirstComfortIndexRecordForAllExceptCurrent(event.currentTrackId)
+        }
+        else {
+            currentComfortIndexRecordsFlow = emptyFlow<List<ComfortIndexRecord>>()
+            firstComfortIndexRecordForAllExceptCurrent = comfortIndexRecordDao
+                .getFirstComfortIndexRecordForAll()
+        }
+        currentTrackId.postValue(event.currentTrackId)
     }
 
 }

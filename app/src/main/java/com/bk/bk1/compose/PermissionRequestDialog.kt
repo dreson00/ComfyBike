@@ -4,6 +4,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.bk.bk1.R
 
 @Composable
 fun PermissionRequestDialog(
@@ -13,19 +15,19 @@ fun PermissionRequestDialog(
 ) {
     AlertDialog(
         onDismissRequest = { onDismiss() },
-        title = { Text("Potřebné oprávnění") },
+        title = { Text(stringResource(R.string.dialog_perm_req)) },
         text = { Text(messageText) },
         confirmButton = {
             Button(onClick = {
                 onConfirm()
                 onDismiss()
             }) {
-                Text("Potvrdit")
+                Text(stringResource(R.string.btn_confirm))
             }
         },
         dismissButton = {
             Button(onClick = { onDismiss() }) {
-                Text("Zrušit")
+                Text(stringResource(R.string.btn_cancel))
             }
         }
     )

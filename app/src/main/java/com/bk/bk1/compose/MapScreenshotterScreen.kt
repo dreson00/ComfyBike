@@ -6,9 +6,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import com.bk.bk1.R
@@ -47,14 +48,13 @@ fun MapScreenshotterScreen(
             if (viewModel.saveImage(screenshotState.bitmap!!, trackId) == 0) {
                 Toast.makeText(
                     context,
-                    "Obrázek byl uložen do složky Documents/ComfyBike.",
+                    context.getText(R.string.info_img_saved),
                     Toast.LENGTH_LONG
                 ).show()
                 navController.popBackStack()
             }
         }
     }
-
 
     Column(
         modifier = Modifier
@@ -91,7 +91,7 @@ fun MapScreenshotterScreen(
                             MapMarker(
                                 context = LocalContext.current,
                                 position = LatLng(item.latitude, item.longitude),
-                                title = "CI: ${item.comfortIndex}",
+                                title = "${stringResource(R.string.label_comfort_index)}${item.comfortIndex}",
                                 color = color,
                                 iconResourceId = R.drawable.baseline_circle_12
                             )
@@ -115,7 +115,7 @@ fun MapScreenshotterScreen(
                     screenshotState.capture()
                 }
             ) {
-                Text("Uložit")
+                Text(stringResource(R.string.btn_save))
             }
             Button(
                 modifier = Modifier
@@ -127,7 +127,7 @@ fun MapScreenshotterScreen(
                     navController.popBackStack()
                 }
             ) {
-                Text("Zrušit")
+                Text(stringResource(R.string.btn_cancel))
             }
         }
 //        screenshotState.imageBitmap?.let {

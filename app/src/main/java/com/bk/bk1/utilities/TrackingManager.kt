@@ -3,6 +3,7 @@ package com.bk.bk1.utilities
 import android.location.Location
 import com.bk.bk1.data.ComfortIndexRecordDao
 import com.bk.bk1.data.TrackRecordDao
+import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.events.SensorDataReceivedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
 import com.bk.bk1.models.ComfortIndexRecord
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,7 +33,7 @@ class TrackingManager @Inject constructor(
     private val locationClient: LocationClient
 ) {
     private var trackingStatus = 0
-    private var lastTrackId = 0
+    private var lastTrackId: Int? = null
     private var lastTimestamp = 0
     private var oneSecondDataList = mutableListOf<LinearAcceleration>()
     private var location: Location? = null
@@ -48,12 +50,14 @@ class TrackingManager @Inject constructor(
             }
             .launchIn(scope)
 
-        scope.launch {
+        runBlocking {
             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             val dateString = formatter.format(Date())
             val trackRecord = TrackRecord(name = "Trasa", time = dateString)
-            lastTrackId =  trackRecordDao.upsertTrackRecord(trackRecord).toInt()
+            lastTrackId = trackRecordDao.upsertTrackRecord(trackRecord).toInt()
         }
+
+        bus.post(produceCurrentTrackIdChangedEvent())
         trackingStatus = 1
         bus.post(produceTrackingStatusChangedEvent())
     }
@@ -62,6 +66,8 @@ class TrackingManager @Inject constructor(
         if (trackingStatus <= 0) {
             return
         }
+        lastTrackId = null
+        bus.post(produceCurrentTrackIdChangedEvent())
         trackingStatus = 0
         bus.post(produceTrackingStatusChangedEvent())
         locationClient.removeLocationUpdates()
@@ -101,16 +107,16 @@ class TrackingManager @Inject constructor(
             val comfortIndex = (1.0 / sqrt((1.0 / filteredAccYCount) * accelerationPowSum)).toFloat()
             scope.launch {
                 val currentLocation = location
-                currentLocation?.let {
+                if (currentLocation != null && lastTrackId != null) {
                     val closeRecord = comfortIndexRecordDao
-                        .getRecordsByTrackId(lastTrackId)
+                        .getRecordsByTrackId(lastTrackId!!)
                         .first()
                         .firstOrNull { record ->
                             val recordLocation = Location("").apply {
                                 latitude = record.latitude
                                 longitude = record.longitude
                             }
-                            currentLocation.distanceTo(recordLocation) < 5
+                            currentLocation.distanceTo(recordLocation) <= 5
                         }
 
                     if (closeRecord != null) {
@@ -121,7 +127,7 @@ class TrackingManager @Inject constructor(
                         comfortIndexRecordDao.upsertRecord(
                             ComfortIndexRecord(
                                 comfortIndex = comfortIndex,
-                                trackRecordId = lastTrackId,
+                                trackRecordId = lastTrackId!!,
                                 latitude = currentLocation.latitude,
                                 longitude = currentLocation.longitude
                             )
@@ -135,5 +141,10 @@ class TrackingManager @Inject constructor(
     @Produce
     fun produceTrackingStatusChangedEvent(): TrackingStatusChangedEvent {
         return TrackingStatusChangedEvent(trackingStatus)
+    }
+
+    @Produce
+    fun produceCurrentTrackIdChangedEvent(): CurrentTrackIdChangedEvent {
+        return CurrentTrackIdChangedEvent(lastTrackId)
     }
 }

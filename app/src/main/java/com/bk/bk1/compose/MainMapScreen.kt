@@ -2,13 +2,18 @@
 
 package com.bk.bk1.compose
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.location.Location
+import android.view.LayoutInflater
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,10 +34,12 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -47,12 +54,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -66,6 +78,7 @@ import androidx.navigation.NavController
 import com.bk.bk1.R
 import com.bk.bk1.ui.theme.BK1Theme
 import com.bk.bk1.ui.theme.DimGreen
+import com.bk.bk1.ui.theme.GreyLightBlue
 import com.bk.bk1.ui.theme.Red400
 import com.bk.bk1.ui.theme.Red700
 import com.bk.bk1.utilities.SensorService
@@ -81,20 +94,24 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapEffect
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerInfoWindow
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberMarkerState
+import com.google.maps.android.ui.IconGenerator
 import com.leinardi.android.speeddial.compose.FabWithLabel
 import com.leinardi.android.speeddial.compose.SpeedDial
 import com.leinardi.android.speeddial.compose.SpeedDialState
 
+@SuppressLint("SetTextI18n")
 @Composable
 @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class,
-    MapsComposeExperimentalApi::class
+    MapsComposeExperimentalApi::class, ExperimentalPermissionsApi::class,
+    ExperimentalComposeUiApi::class
 )
 fun MainMapScreen(
     navController: NavController,
@@ -105,6 +122,7 @@ fun MainMapScreen(
     var speedDialState by rememberSaveable { mutableStateOf(SpeedDialState.Collapsed) }
     var overlayVisible by rememberSaveable { mutableStateOf(speedDialState.isExpanded()) }
     val cameraPositionState = rememberCameraPositionState()
+    val currentTrackId = viewModel.currentTrackId.observeAsState()
 
     val locationPermissionsState = rememberMultiplePermissionsState(
         permissions = getLocationPermissionList()
@@ -133,7 +151,7 @@ fun MainMapScreen(
 
     if (showLocationPermissionRequest.value) {
         PermissionRequestDialog(
-            messageText = "Pro zobrazení polohy uživatele a připojení senzoru je nutné oprávnění pro přístup k poloze.",
+            messageText = stringResource(R.string.req_perm_loc),
             onConfirm = {
                 locationPermissionsState.launchMultiplePermissionRequest()
             },
@@ -146,7 +164,7 @@ fun MainMapScreen(
 
     if (showBluetoothScanRequest.value) {
         PermissionRequestDialog(
-            messageText = "Pro skenování okolních zařízení je nutné oprávnění.",
+            messageText = stringResource(R.string.req_perm_scan),
             onConfirm = {
                 bluetoothScanPermissionsState.launchMultiplePermissionRequest()
             },
@@ -156,13 +174,13 @@ fun MainMapScreen(
         )
     }
 
-    LaunchedEffect(key1 = Unit, key2 = isLocationEnabled) {
+    LaunchedEffect(Unit, key2 = isLocationEnabled) {
         if (locationPermissionsState.allPermissionsGranted && isLocationEnabled) {
             viewModel.enableLocationTracking()
         }
     }
 
-    LaunchedEffect(location) {
+    LaunchedEffect(location, isLocationEnabled) {
         if (viewModel.cameraFollow && location != null && isLocationEnabled) {
             cameraPositionState.animate(
                 CameraUpdateFactory
@@ -192,7 +210,6 @@ fun MainMapScreen(
                     if (connectionStatus == 0) {
                         item {
                             FabWithLabel(
-                                fabContainerColor = DimGreen,
                                 onClick = {
                                     if (bluetoothScanPermissionsState.allPermissionsGranted) {
                                         if (isBluetoothAdapterOn) {
@@ -200,7 +217,7 @@ fun MainMapScreen(
                                         } else {
                                             Toast.makeText(
                                                 context,
-                                                "Bluetooth adaptér je vypnutý.",
+                                                context.getText(R.string.warn_bt_off),
                                                 Toast.LENGTH_LONG
                                             ).show()
                                         }
@@ -209,7 +226,9 @@ fun MainMapScreen(
                                     }
 
                                 },
-                                labelContent = { Text(text = "Připojit senzor") },
+                                labelContent = {
+                                    Text(text = stringResource(R.string.btn_sensor_connect))
+                                }
                             ) {
                                 Icon(Icons.Default.Add, null)
                             }
@@ -223,7 +242,7 @@ fun MainMapScreen(
                                 },
                                 labelContent = {
                                     Text(
-                                        text = "Odpojit senzor",
+                                        text = stringResource(R.string.btn_sensor_disconnect),
                                         color = Red700
                                     )
                                 },
@@ -232,13 +251,13 @@ fun MainMapScreen(
                             }
                         }
                     }
-                    if (connectionStatus == 2 && trackingStatus == 0) {
+                    if (isLocationEnabled && connectionStatus == 2 && trackingStatus == 0) {
                         item {
                             FabWithLabel(
                                 onClick = {
                                     startSensorServiceWithAction(SensorService.Actions.START_TRACKING.toString())
                                 },
-                                labelContent = { Text(text = "Zaznamenat novou trasu") },
+                                labelContent = { Text(text = stringResource(R.string.btn_new_track_start)) },
                             ) {
                                 Icon(Icons.Default.PlayArrow, null)
                             }
@@ -249,7 +268,7 @@ fun MainMapScreen(
                                 onClick = {
                                     startSensorServiceWithAction(SensorService.Actions.STOP_TRACKING.toString())
                                 },
-                                labelContent = { Text(text = "Ukončit zaznamenávání") },
+                                labelContent = { Text(text = stringResource(R.string.btn_new_track_stop)) },
                             ) {
                                 Icon(
                                     painterResource(R.drawable.baseline_stop_24),
@@ -262,7 +281,7 @@ fun MainMapScreen(
                 item {
                     FabWithLabel(
                         onClick = { navController.navigate("trackList") },
-                        labelContent = { Text(text = "Spravovat trasy") },
+                        labelContent = { Text(text = stringResource(R.string.btn_track_list)) },
                     ) {
                         Icon(Icons.AutoMirrored.Filled.List, null)
                     }
@@ -274,29 +293,105 @@ fun MainMapScreen(
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
-                    properties = MapProperties(isMyLocationEnabled = locationPermissionsState.allPermissionsGranted),
+                    properties = MapProperties(
+                        isMyLocationEnabled = locationPermissionsState.allPermissionsGranted,
+                        mapStyleOptions =  MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_no_poi)
+                    ),
                     cameraPositionState = cameraPositionState,
                 ) {
-                    MapEffect { map ->
-                        map.setMapStyle(MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_no_poi))
-                    }
                     LaunchedEffect(cameraPositionState.isMoving) {
                         if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
                             viewModel.disableCameraFollow()
                             speedDialState = SpeedDialState.Collapsed
                         }
                     }
-                    val comfortIndexRecords = viewModel.comfortIndexRecords.collectAsState(initial = emptyList())
-                    if (comfortIndexRecords.value.isNotEmpty()) {
-                        comfortIndexRecords.value.forEach { item ->
-                            val color = Color.hsl(mapFloatToHue(item.comfortIndex), 1f, 0.5f)
-                            MapMarker(
-                                context = LocalContext.current,
-                                position = LatLng(item.latitude, item.longitude),
-                                title = "CI: ${item.comfortIndex}",
-                                color = color,
-                                iconResourceId = R.drawable.baseline_circle_12
-                            )
+                    val iconGenerator = remember { IconGenerator(context) }
+                    val markerView = remember { LayoutInflater.from(context).inflate(R.layout.custom_marker_layout, null) }
+                    val markerIconView = remember { markerView.findViewById<ImageView>(R.id.marker_icon) }
+                    val markerLabel = remember { markerView.findViewById<TextView>(R.id.marker_label) }
+                    markerIconView.setColorFilter(MaterialTheme.colorScheme.tertiary.toArgb())
+                    markerLabel.setTextColor(MaterialTheme.colorScheme.tertiary.toArgb())
+                    if (currentTrackId.value != null) {
+                        val currentComfortIndexRecords = viewModel.currentComfortIndexRecordsFlow.collectAsState(
+                            initial = emptyList()
+                        )
+                        if (currentComfortIndexRecords.value.isNotEmpty()) {
+                            currentComfortIndexRecords.value.forEach { record ->
+                                val color = Color.hsl(mapFloatToHue(record.comfortIndex), 1f, 0.5f)
+                                MapMarker(
+                                    context = LocalContext.current,
+                                    position = LatLng(record.latitude, record.longitude),
+                                    title = "${stringResource(R.string.ci_x)}${record.comfortIndex}",
+                                    color = color,
+                                    iconResourceId = R.drawable.baseline_circle_12
+                                )
+                            }
+                        }
+                    }
+
+                    val firstComfortIndexRecordForAllTracks = viewModel
+                        .firstComfortIndexRecordForAllExceptCurrent
+                        .collectAsState(
+                            initial = emptyList()
+                    )
+                    if (firstComfortIndexRecordForAllTracks.value.isNotEmpty()) {
+                        firstComfortIndexRecordForAllTracks.value.forEach { record ->
+                            markerIconView.setImageResource(R.drawable.bicycle_pin_48)
+                            markerLabel.text = "${stringResource(R.string.label_track_x)} ${record.trackRecordId}"
+
+                            iconGenerator.setBackground(null)
+                            iconGenerator.setContentView(markerView)
+                            MarkerInfoWindow(
+                                state = rememberMarkerState(
+                                    position = LatLng(record.latitude, record.longitude)
+                                ),
+                                icon = BitmapDescriptorFactory.fromBitmap(iconGenerator.makeIcon()),
+                                onInfoWindowClick = { navController.navigate("trackDetailScreen/${record.trackRecordId }") },
+                                onClick = {
+                                    it.showInfoWindow()
+                                    true
+                                }
+                            ) {
+                                Box {
+                                    Canvas(
+                                        modifier = Modifier
+                                            .width(105.dp)
+                                            .height(50.dp)
+                                            .align(Alignment.Center)
+                                    ) {
+                                        val trianglePath = Path().let {
+                                            it.moveTo(this.size.width * .40f, this.size.height - 2f)
+                                            it.lineTo(this.size.width * .50f, this.size.height + 30f)
+                                            it.lineTo(this.size.width * .60f, this.size.height - 2f)
+                                            it.close()
+                                            it
+                                        }
+                                        drawRoundRect(
+                                            GreyLightBlue,
+                                            size = Size(this.size.width, this.size.height),
+                                            cornerRadius = CornerRadius(60f)
+                                        )
+                                        drawPath(
+                                            path = trianglePath,
+                                            GreyLightBlue,
+                                        )
+                                    }
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(25.dp))
+                                            .padding(15.dp, 10.dp)
+                                            .align(Alignment.Center)
+                                    ) {
+                                        Button(
+                                            onClick = { }
+                                        ) {
+                                            Text(stringResource(R.string.btn_details))
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -316,7 +411,7 @@ fun MainMapScreen(
                         if (!isLocationEnabled) {
                             Icon(
                                 painterResource(R.drawable.baseline_location_off_24),
-                                contentDescription = "Zjišťování polohy není povoleno",
+                                contentDescription = stringResource(R.string.warn_loc_off),
                                 tint = Red700
                             )
                             Box(
@@ -327,7 +422,7 @@ fun MainMapScreen(
                             )
                         }
                         Text(
-                            text = "Stav senzoru:",
+                            text = stringResource(R.string.status_text),
                             color = Color.White,
                             fontSize = 15.sp,
                             textAlign = TextAlign.Center,
@@ -337,10 +432,10 @@ fun MainMapScreen(
                         )
 
                         val sensorStatusText = when(connectionStatus) {
-                            0 -> "Nepřipojen"
-                            1 -> "Připojování..."
-                            2 -> "Připojen"
-                            else -> "Chyba"
+                            0 -> stringResource(R.string.status_not_connected)
+                            1 -> stringResource(R.string.status_connecting)
+                            2 -> stringResource(R.string.status_connected)
+                            else -> stringResource(R.string.status_error)
                         }
                         Text(
                             text = sensorStatusText,
@@ -398,7 +493,7 @@ fun MainMapScreen(
                                 modifier = Modifier
                                     .size(15.dp)
                                     .align(Alignment.CenterVertically),
-                                content = {}
+                                content = { }
                             )
                         }
                     }
@@ -417,14 +512,14 @@ fun MainMapScreen(
                                 painterResource(
                                     R.drawable.baseline_my_location_24
                                 ),
-                                contentDescription = "Moje poloha"
+                                contentDescription = stringResource(R.string.desc_my_loc)
                             )
                         } else {
                             Icon(
                                 painterResource(
                                     R.drawable.baseline_location_searching_24
                                 ),
-                                contentDescription = "Moje poloha"
+                                contentDescription = stringResource(R.string.desc_my_loc)
                             )
                         }
                     }
@@ -438,7 +533,7 @@ fun MainMapScreen(
                         onClick = {
                             Toast.makeText(
                                 context,
-                                "Zjišťování polohy není povoleno.",
+                                context.getText(R.string.warn_loc_off),
                                 Toast.LENGTH_LONG
                             ).show()
                         }
@@ -447,7 +542,7 @@ fun MainMapScreen(
                             painterResource(
                                 R.drawable.baseline_location_off_24
                             ),
-                            contentDescription = "Zjišťování polohy není povoleno.",
+                            contentDescription = stringResource(R.string.warn_loc_off),
                         )
                     }
                 }
@@ -462,13 +557,58 @@ fun MainMapScreen(
                         }
                     ) {
                         Icon(Icons.Outlined.Warning,
-                            contentDescription = "Nutné oprávnění"
+                            contentDescription = stringResource(R.string.desc_perm_required)
                         )
                     }
                 }
             }
         }
     )
+}
+
+@Composable
+@Preview
+fun MarkerWindowPreview() {
+    Box {
+        Canvas(
+            modifier = Modifier
+                .width(105.dp)
+                .height(50.dp)
+                .align(Alignment.Center)
+        ) {
+            val trianglePath = Path().let {
+                it.moveTo(this.size.width * .40f, this.size.height - 2f)
+                it.lineTo(this.size.width * .50f, this.size.height + 30f)
+                it.lineTo(this.size.width * .60f, this.size.height - 2f)
+                it.close()
+                it
+            }
+            drawRoundRect(
+                GreyLightBlue,
+                size = Size(this.size.width, this.size.height),
+                cornerRadius = CornerRadius(60f)
+            )
+            drawPath(
+                path = trianglePath,
+                GreyLightBlue,
+            )
+        }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .clip(RoundedCornerShape(25.dp))
+                .padding(15.dp, 10.dp)
+                .align(Alignment.Center)
+        ) {
+            Button(
+                onClick = { },
+
+            ) {
+                Text("Detaily")
+            }
+        }
+    }
 }
 
 
@@ -514,7 +654,7 @@ fun mapFloatToHue(value: Float): Float {
 }
 
 @Composable
-@Preview
+//@Preview
 fun StatusBarPreview() {
     val connectionStatus = 0
     val isCountdownOn = true
