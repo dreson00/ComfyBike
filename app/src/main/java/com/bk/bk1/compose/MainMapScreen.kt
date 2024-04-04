@@ -39,7 +39,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -154,6 +153,7 @@ fun MainMapScreen(
             messageText = stringResource(R.string.req_perm_loc),
             onConfirm = {
                 locationPermissionsState.launchMultiplePermissionRequest()
+                viewModel.enableCameraFollow()
             },
             onDismiss = {
                 viewModel.disableLocationPermissionRequestDialog()
@@ -174,10 +174,8 @@ fun MainMapScreen(
         )
     }
 
-    LaunchedEffect(Unit, key2 = isLocationEnabled) {
-        if (locationPermissionsState.allPermissionsGranted && isLocationEnabled) {
-            viewModel.enableLocationTracking()
-        }
+    if (locationPermissionsState.allPermissionsGranted && isLocationEnabled) {
+        viewModel.enableLocationTracking()
     }
 
     LaunchedEffect(location, isLocationEnabled) {
@@ -309,8 +307,8 @@ fun MainMapScreen(
                     val markerView = remember { LayoutInflater.from(context).inflate(R.layout.custom_marker_layout, null) }
                     val markerIconView = remember { markerView.findViewById<ImageView>(R.id.marker_icon) }
                     val markerLabel = remember { markerView.findViewById<TextView>(R.id.marker_label) }
-                    markerIconView.setColorFilter(MaterialTheme.colorScheme.tertiary.toArgb())
-                    markerLabel.setTextColor(MaterialTheme.colorScheme.tertiary.toArgb())
+                    markerIconView.setColorFilter(Red400.toArgb())
+                    markerLabel.setTextColor(Red400.toArgb())
                     if (currentTrackId.value != null) {
                         val currentComfortIndexRecords = viewModel.currentComfortIndexRecordsFlow.collectAsState(
                             initial = emptyList()

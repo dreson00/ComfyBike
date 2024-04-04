@@ -2,15 +2,12 @@ package com.bk.bk1.dependencyInjection
 
 import android.bluetooth.BluetoothManager
 import android.content.Context
-import android.location.LocationManager
 import androidx.room.Room
 import com.bk.bk1.data.TrackDatabase
 import com.bk.bk1.utilities.BluetoothScanManager
 import com.bk.bk1.utilities.BluetoothStateReceiver
 import com.bk.bk1.utilities.BluetoothStateUpdater
 import com.bk.bk1.utilities.ExportManager
-import com.bk.bk1.utilities.LocationStateReceiver
-import com.bk.bk1.utilities.LocationStateUpdater
 import com.bk.bk1.utilities.SensorManager
 import com.movesense.mds.Mds
 import dagger.Module
@@ -93,29 +90,7 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideLocationStateUpdater(): LocationStateUpdater {
-        return LocationStateUpdater()
+    fun provideFileManager(): ExportManager {
+        return ExportManager()
     }
-
-    @Singleton
-    @Provides
-    fun provideLocationStateReceiver(
-        @ApplicationContext context: Context,
-        locationStateUpdater: LocationStateUpdater
-    ): LocationStateReceiver {
-        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        return LocationStateReceiver(
-            locationManager,
-            locationStateUpdater
-        )
-    }
-
-    @Singleton
-    @Provides
-    fun provideFileManager(
-        @ApplicationContext context: Context
-    ): ExportManager {
-        return ExportManager(context)
-    }
-
 }

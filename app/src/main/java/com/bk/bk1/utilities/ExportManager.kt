@@ -1,57 +1,55 @@
 package com.bk.bk1.utilities
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.os.Environment
 import com.bk.bk1.models.ComfortIndexRecord
 import java.io.File
 import java.io.FileOutputStream
-import javax.inject.Inject
+import java.io.IOException
 
-class ExportManager @Inject constructor(
-    private val appContext: Context
-) {
-    private val filesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-
+class ExportManager {
     fun saveBitmapAsPng(bitmap: Bitmap, fileName: String): Int {
         val folder = getOrCreateFolder()
-        folder?.let {
-            val file = createFile(folder, fileName, "png")
-            val outputStream = FileOutputStream(file)
+        val file = createFile(folder, fileName, "png")
 
+        return try {
+            val outputStream = FileOutputStream(file)
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
 
             outputStream.flush()
             outputStream.close()
-            return 0
+            0
         }
-        return 1
+        catch (e: Exception) {
+            1
+        }
     }
 
     fun saveCiListAsCsv(records: List<ComfortIndexRecord>, fileName: String): Int {
         val folder = getOrCreateFolder()
-        folder?.let {
-            val file = createFile(folder, fileName, "csv")
+        val file = createFile(folder, fileName, "csv")
+
+        return try {
             file.bufferedWriter().use { out ->
                 out.write("comfortIndex,latitude,longitude\n")
                 records.forEach { record ->
                     out.write("${record.comfortIndex},${record.latitude},${record.longitude}\n")
                 }
             }
-            return 0
+            0
+        } catch (e: IOException) {
+            1
         }
-        return 1
     }
 
-    private fun getOrCreateFolder(): File? {
-        if (filesDir != null) {
-            val folder = File(filesDir, "ComfyBike")
-            if (!folder.exists()) {
-                folder.mkdir()
-            }
-            return folder
+    private fun getOrCreateFolder(): File {
+        val externalDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+        val appDirectory = File(externalDirectory, "ComfyBike")
+
+        if (!appDirectory.exists()) {
+            appDirectory.mkdirs()
         }
-        return null
+        return appDirectory
     }
 
     private fun createFile(folder: File, fileName: String, extensionNoDot: String): File {

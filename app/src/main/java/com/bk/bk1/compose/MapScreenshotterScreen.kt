@@ -130,15 +130,6 @@ fun MapScreenshotterScreen(
                 Text(stringResource(R.string.btn_cancel))
             }
         }
-//        screenshotState.imageBitmap?.let {
-//            Image(
-//                modifier = Modifier
-//                    .width(200.dp)
-//                    .height(150.dp),
-//                bitmap = it,
-//                contentDescription = null
-//            )
-//        }
     }
 }
 

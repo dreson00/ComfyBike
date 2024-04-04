@@ -63,6 +63,7 @@ fun SensorConnectScreen(
 
     val devices by viewModel.devicesLiveData.observeAsState(initial = emptyList())
     val isBluetoothAdapterOn: Boolean by viewModel.isBluetoothAdapterOn.observeAsState(initial = true)
+    val blockButtonClicks = remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val backgroundServicePermissionState = rememberMultiplePermissionsState(
@@ -152,20 +153,20 @@ fun SensorConnectScreen(
                         items(devices) { device ->
                             Row(
                                 modifier = Modifier
-                                    .clickable {
+                                    .clickable(enabled = !blockButtonClicks.value) {
                                         if (postNotificationPermissionState.allPermissionsGranted) {
                                             if (backgroundServicePermissionState.allPermissionsGranted) {
+                                                blockButtonClicks.value = true
                                                 sensorServiceStarter(device.address)
                                                 viewModel.stopScan()
                                                 navController.popBackStack()
                                             } else {
                                                 showBackgroundServiceRequest.value = true
                                             }
-                                        } else {
+                                        }
+                                        else {
                                             showPostNotificationRequest.value = true
                                         }
-
-
                                     }
                                     .height(70.dp)
                                     .fillMaxWidth()

@@ -30,7 +30,7 @@
     <string name="desc_back">Zpět</string>
     <string name="graph_label_record_count">Počet záznamů</string>
     <string name="graph_label_ci_val_ranges">Rozsahy hodnot CI</string>
-    <string name="graph_label_ci">Index dynamického komfortu</string>
+    <string name="graph_label_ci">Index komfortu</string>
     <string name="graph_label_record_rank">Pořadí záznamu</string>
     <string name="record_time_x">Čas záznamu: </string>
     <string name="record_count_x">Počet záznamů: </string>

@@ -3,6 +3,7 @@
 package com.bk.bk1.compose
 
 
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
@@ -186,7 +187,8 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                                                             Text(stringResource(R.string.btn_csv))
                                                         },
                                                         onClick = {
-                                                            if (!externalStoragePermissionsState.allPermissionsGranted) {
+                                                            if (externalStoragePermissionsState.allPermissionsGranted
+                                                                || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                                                                 scope.launch {
                                                                     val success = viewModel.saveCiRecordsAsCsv(track)
                                                                     val message = if (success == 0) {
@@ -213,7 +215,8 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                                                             Text(stringResource(R.string.btn_img))
                                                         },
                                                         onClick =  {
-                                                            if (!externalStoragePermissionsState.allPermissionsGranted) {
+                                                            if (externalStoragePermissionsState.allPermissionsGranted
+                                                                || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                                                                 navController.navigate("mapScreenshotterScreen/${track.id}")
                                                             }
                                                             else {

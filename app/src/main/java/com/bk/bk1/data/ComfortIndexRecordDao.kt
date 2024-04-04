@@ -28,5 +28,8 @@ interface ComfortIndexRecordDao {
     @Query("SELECT * FROM ComfortIndexRecord GROUP BY trackRecordId")
     fun getFirstComfortIndexRecordForAll(): Flow<List<ComfortIndexRecord>>
 
+    @Query("SELECT COUNT(*) FROM ComfortIndexRecord WHERE trackRecordId = :trackId")
+    fun getComfortIndexRecordCount(trackId: Int): Int
+
 
 }

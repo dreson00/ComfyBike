@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -167,11 +168,14 @@ fun TrackDetailScreen(
         content = {
             Column(
                 modifier = Modifier
-                    .padding(PaddingValues(15.dp, 15.dp, 15.dp, 5.dp))
+                    .padding(PaddingValues(15.dp, 0.dp))
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(15.dp)
             ) {
+                Box(
+                    modifier = Modifier.size(0.dp)
+                )
                 TrackDetailCard {
                         val dbFormatter =
                             SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -192,6 +196,11 @@ fun TrackDetailScreen(
                 TrackDetailCard {
                     CiDistributionColumnChart(comfortIndexRecords)
                 }
+                Box(
+                    modifier = Modifier
+                        .height(70.dp)
+                        .background(color = Color.Transparent)
+                )
             }
         },
         sheetContent = {
