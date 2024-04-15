@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -42,6 +44,7 @@ fun MapScreenshotterScreen(
 ) {
     val screenshotState = rememberScreenshotState()
     val context = LocalContext.current
+    val blockSaveButton = remember { mutableStateOf(false) }
 
     if (screenshotState.bitmap != null && trackId != null) {
         LaunchedEffect(Unit) {
@@ -113,7 +116,9 @@ fun MapScreenshotterScreen(
                 shape = RectangleShape,
                 onClick = {
                     screenshotState.capture()
-                }
+                    blockSaveButton.value = true
+                },
+                enabled = !blockSaveButton.value
             ) {
                 Text(stringResource(R.string.btn_save))
             }

@@ -116,7 +116,7 @@ class MainActivity : ComponentActivity() {
 
     private fun checkPermissions() {
         val permissions = arrayOf(
-            Manifest.permission.INTERNET, // installation permission
+            Manifest.permission.INTERNET,
         )
 
         ActivityCompat.requestPermissions(

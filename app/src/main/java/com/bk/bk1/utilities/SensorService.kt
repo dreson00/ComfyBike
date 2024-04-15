@@ -3,14 +3,13 @@ package com.bk.bk1.utilities
 import android.app.Service
 import android.content.Intent
 import android.os.Binder
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.bk.bk1.R
 import com.bk.bk1.data.TrackDatabase
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.SensorAddressChangedEvent
+import com.bk.bk1.events.TrackingStatusChangedEvent
 import com.squareup.otto.Produce
 import com.squareup.otto.Subscribe
 import dagger.hilt.android.AndroidEntryPoint
@@ -29,7 +28,7 @@ class SensorService() : Service() {
     private val bus = BusProvider.getEventBus()
     private var isRegisteredForBus = false
     private var sensorAddress = String()
-    private val handler = Handler(Looper.getMainLooper())
+    private var trackingStatus = 0
 
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -66,7 +65,6 @@ class SensorService() : Service() {
 
     private fun stopService() {
         stopTracking()
-        handler.removeCallbacksAndMessages(null)
         sensorManager.disconnectSensor()
         sensorAddress = String()
         bus.post(produceSensorAddressEvent())
@@ -75,31 +73,24 @@ class SensorService() : Service() {
         stopSelf()
     }
 
-    private fun pauseForDisconnectService() {
-        stopTracking()
-        handler.removeCallbacksAndMessages(null)
-        sensorAddress = String()
-
-    }
-
     private fun startTracking() {
         trackingManager.startTracking()
-        sensorManager.subscribe()
     }
 
     private fun stopTracking() {
         trackingManager.stopTracking()
-        sensorManager.unsubscribe()
     }
 
     @Subscribe
     fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
-        if (event.connectionStatus <= 0) {
-            handler.postDelayed(::stopTracking, 60000)
+        if (event.connectionStatus <= 0 && trackingStatus == 1) {
+            stopTracking()
         }
-        if (event.connectionStatus > 0) {
-            handler.removeCallbacksAndMessages(null)
-        }
+    }
+
+    @Subscribe
+    fun onTrackingStatusChanged(event: TrackingStatusChangedEvent) {
+        trackingStatus = event.trackingStatus
     }
 
     @Produce

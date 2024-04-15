@@ -66,6 +66,7 @@ import androidx.navigation.NavController
 import com.bk.bk1.R
 import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.ui.theme.BK1Theme
+import com.bk.bk1.utilities.ParseFromDbFormat
 import com.bk.bk1.viewModels.TrackDetailScreenViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
@@ -98,8 +99,6 @@ import com.patrykandpatrick.vico.core.model.columnSeries
 import com.patrykandpatrick.vico.core.model.lineSeries
 import kotlinx.coroutines.launch
 import java.math.RoundingMode
-import java.text.SimpleDateFormat
-import java.util.Locale
 import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class, MapsComposeExperimentalApi::class,
@@ -177,18 +176,65 @@ fun TrackDetailScreen(
                     modifier = Modifier.size(0.dp)
                 )
                 TrackDetailCard {
-                        val dbFormatter =
-                            SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                        val date = dbFormatter.parse(trackRecord.value!!.time)
-                        val outputFormatter =
-                            SimpleDateFormat("d. MMMM yyyy HH:mm:ss", Locale.forLanguageTag("cs"))
-                        val outputDateString = date?.let { outputFormatter.format(it) }
-                        Text(
-                            text = "${stringResource(R.string.record_time_x)} $outputDateString"
+                    val recordCount = comfortIndexRecords.value.count()
+
+                    if (recordCount > 0) {
+                        val dateString = remember {
+                            ParseFromDbFormat(trackRecord.value!!.time)
+                        }
+                        Text("${stringResource(R.string.record_time_x)} $dateString")
+
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .clip(RoundedCornerShape(25.dp))
+                                .height(2.dp)
+                                .fillMaxWidth()
+                                .background(color = Color.Gray)
                         )
-                        Text(
-                            text = "${stringResource(R.string.record_count_x)} ${comfortIndexRecords.value.count()}"
+
+                        val minimumCi = remember {
+                            comfortIndexRecords.value.minBy { it.comfortIndex }.comfortIndex
+                        }
+                        val maximumCi = remember {
+                            comfortIndexRecords.value.maxBy { it.comfortIndex }.comfortIndex
+                        }
+                        val averageCi = remember {
+                            (comfortIndexRecords
+                                .value
+                                .sumOf {
+                                    it.comfortIndex.toDouble()
+                                } / recordCount).toFloat()
+                        }
+                        val medianCi = remember {
+                            if (recordCount % 2 == 0) {
+                                val midIndex1 = recordCount / 2
+                                val midIndex2 = midIndex1 - 1
+                                (comfortIndexRecords.value[midIndex1].comfortIndex
+                                        + comfortIndexRecords.value[midIndex2].comfortIndex) / 2
+                            } else {
+                                val midIndex = recordCount / 2
+                                comfortIndexRecords.value[midIndex].comfortIndex
+                            }
+                        }
+
+                        TrackDetailTable(
+                            leftColumn = {
+                                Text(stringResource(R.string.record_count_x))
+                                Text(stringResource(R.string.record_min_x))
+                                Text(stringResource(R.string.record_max_x))
+                                Text(stringResource(R.string.record_avg_x))
+                                Text(stringResource(R.string.record_median_x))
+                            },
+                            rightColumn = {
+                                Text("$recordCount")
+                                Text("$minimumCi")
+                                Text("$maximumCi")
+                                Text("$averageCi")
+                                Text("$medianCi")
+                            }
                         )
+                    }
                 }
                 TrackDetailCard {
                     TrackProgressLineChart(comfortIndexRecords)
@@ -282,7 +328,7 @@ fun TrackDetailScreen(
                         MapMarker(
                             context = LocalContext.current,
                             position = LatLng(item.latitude, item.longitude),
-                            title = "${stringResource(R.string.ci_x)}${item.comfortIndex}",
+                            title = "${stringResource(R.string.ci_x)} ${item.comfortIndex}",
                             color = color,
                             iconResourceId = R.drawable.baseline_circle_12
                         )
@@ -309,6 +355,29 @@ fun TrackDetailCard(
             modifier = Modifier.padding(10.dp)
         ) {
             content()
+        }
+    }
+}
+
+@Composable
+fun TrackDetailTable(
+    leftColumn: @Composable (() -> Unit),
+    rightColumn: @Composable (() -> Unit)
+) {
+    Row(
+        Modifier
+            .fillMaxWidth(0.8f),
+        horizontalArrangement = Arrangement.spacedBy(30.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.End
+        ) {
+            leftColumn()
+        }
+        Column(
+            horizontalAlignment = Alignment.Start
+        ) {
+            rightColumn()
         }
     }
 }

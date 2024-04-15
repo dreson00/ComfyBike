@@ -5,6 +5,7 @@ import com.bk.bk1.data.SensorNotificationListener
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.SensorAddressChangedEvent
 import com.bk.bk1.events.SerialNumberChangedEvent
+import com.bk.bk1.events.TrackingStatusChangedEvent
 import com.bk.bk1.models.BluetoothDeviceInfo
 import com.movesense.mds.Mds
 import com.movesense.mds.MdsSubscription
@@ -44,7 +45,7 @@ class SensorManager @Inject constructor(
         isRegisteredForBus = false
     }
 
-    fun subscribe() {
+    private fun subscribe() {
         bus.register(sensorNotificationListener)
         mdsSubscription = mds?.subscribe(
             "suunto://MDS/EventListener",
@@ -54,14 +55,13 @@ class SensorManager @Inject constructor(
         isSubscribed = true
     }
 
-    fun unsubscribe() {
+    private fun unsubscribe() {
         if (isSubscribed) {
             mdsSubscription?.unsubscribe()
             bus.unregister(sensorNotificationListener)
             isSubscribed = false
         }
     }
-
 
     @Subscribe
     fun onSensorAddressChanged(event: SensorAddressChangedEvent) {
@@ -78,6 +78,16 @@ class SensorManager @Inject constructor(
     @Subscribe
     fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
         deviceInfo.connectionStatus = event.connectionStatus
+    }
+
+    @Subscribe
+    fun onTrackingStatusChanged(event: TrackingStatusChangedEvent) {
+        if (event.trackingStatus == 1) {
+            subscribe()
+        }
+        else {
+            unsubscribe()
+        }
     }
 
 }

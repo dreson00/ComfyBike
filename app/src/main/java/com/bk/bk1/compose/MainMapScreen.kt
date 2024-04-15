@@ -98,7 +98,6 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerInfoWindow
-import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import com.google.maps.android.ui.IconGenerator
@@ -621,9 +620,13 @@ fun MapMarker(
 ) {
     val icon = bitmapDescriptorFromVector(context, iconResourceId, color)
     Marker(
-        state = MarkerState(position),
+        state = rememberMarkerState(position = position),
         title = title,
         icon = icon,
+        onClick = {
+            it.showInfoWindow()
+            true
+        }
     )
 }
 

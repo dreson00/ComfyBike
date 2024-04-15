@@ -46,5 +46,9 @@
     <string name="info_csv_exp_succ">CSV soubor byl uložen do složky Documents/ComfyBike.</string>
     <string name="info_csv_exp_err">Při exportu se vyskytla chyba.</string>
     <string name="btn_delete">Smazat</string>
+    <string name="record_min_x">Nejmenší CI: </string>
+    <string name="record_max_x">Největší CI: </string>
+    <string name="record_avg_x">Průměrné CI: </string>
+    <string name="record_median_x">Medián: </string>
 
 </resources>

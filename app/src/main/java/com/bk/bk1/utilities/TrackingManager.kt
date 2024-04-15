@@ -66,14 +66,14 @@ class TrackingManager @Inject constructor(
         if (trackingStatus <= 0) {
             return
         }
-        val deleteCandidateId = lastTrackId
+        val toDeleteCandidateId = lastTrackId
         lastTrackId = null
         bus.post(produceCurrentTrackIdChangedEvent())
         trackingStatus = 0
         bus.post(produceTrackingStatusChangedEvent())
 
         scope.launch {
-            deleteCandidateId?.let {
+            toDeleteCandidateId?.let {
                 if (comfortIndexRecordDao.getComfortIndexRecordCount(it) == 0) {
                     trackRecordDao.deleteTrackRecord(it)
                 }
