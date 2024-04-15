@@ -4,10 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bk.bk1.data.ComfortIndexRecordDao
 import com.bk.bk1.data.TrackRecordDao
+import com.bk.bk1.events.TrackDetailScreenEvent
 import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.models.TrackRecord
+import com.bk.bk1.states.TrackDetailScreenState
+import com.bk.bk1.utilities.parseFromDbFormat
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,17 +21,81 @@ class TrackDetailScreenViewModel @Inject constructor(
     private val comfortIndexRecordDao: ComfortIndexRecordDao
 ) : ViewModel() {
 
-    fun getTrackRecordById(trackId: Int): Flow<TrackRecord?>  {
-        return trackRecordDao.getTrackRecordById(trackId)
-    }
+    val state = MutableStateFlow(TrackDetailScreenState())
+    private var _comfortIndexRecords = emptyList<ComfortIndexRecord>()
+    private lateinit var _trackRecord: TrackRecord
 
-    fun getComfortIndexRecordsByTrackId(trackId: Int): Flow<List<ComfortIndexRecord>> {
-        return comfortIndexRecordDao.getRecordsByTrackId(trackId)
-    }
-
-    fun deleteTrackRecord(trackRecord: TrackRecord) {
-        viewModelScope.launch {
-            trackRecordDao.deleteTrackRecord(trackRecord)
+    fun onEvent(event: TrackDetailScreenEvent) {
+        when (event) {
+            is TrackDetailScreenEvent.SetTrackId -> {
+                setTrackId(event.trackId)
+            }
+            is TrackDetailScreenEvent.FilterRecordsBySpeed -> {
+                filterRecordsBySpeedRange(event.speedRange)
+            }
         }
+    }
+
+    private fun setTrackId(trackId: Int) {
+        viewModelScope.launch {
+            _comfortIndexRecords = comfortIndexRecordDao.getRecordListByTrackId(trackId)
+            trackRecordDao.getTrackRecordById(trackId)?.let { trackRecord ->
+                _trackRecord = trackRecord
+                state.update {
+                    it.copy(
+                        trackId = trackId,
+                        comfortIndexRecords = _comfortIndexRecords,
+                        recordTime = parseFromDbFormat(trackRecord.time)
+                    )
+                }
+            }
+        }
+    }
+
+    private fun filterRecordsBySpeedRange(speedRange: ClosedFloatingPointRange<Float>) {
+        val comfortIndexRecords = _comfortIndexRecords.filter {
+            it.bicycleSpeed in speedRange
+        }
+        val recordCount = comfortIndexRecords.count()
+
+        if (comfortIndexRecords.isNotEmpty()) {
+            val minimumCi = comfortIndexRecords.minBy { it.comfortIndex }.comfortIndex
+            val maximumCi = comfortIndexRecords.maxBy { it.comfortIndex }.comfortIndex
+            val averageCi = (
+                    comfortIndexRecords.sumOf { it.comfortIndex.toDouble() } / recordCount
+                    )
+
+            val medianCi =
+                if (recordCount % 2 == 0) {
+                    val midIndex1 = recordCount / 2
+                    val midIndex2 = midIndex1 - 1
+                    (comfortIndexRecords[midIndex1].comfortIndex
+                            + comfortIndexRecords[midIndex2].comfortIndex) / 2
+                } else {
+                    val midIndex = recordCount / 2
+                    comfortIndexRecords[midIndex].comfortIndex
+                }
+
+            state.update {
+                it.copy(
+                    comfortIndexRecords = comfortIndexRecords,
+                    recordCount = recordCount,
+                    ciMin = minimumCi.toDouble(),
+                    ciMax = maximumCi.toDouble(),
+                    ciAvg = averageCi,
+                    ciMedian = medianCi.toDouble()
+                )
+            }
+        }
+        else {
+            state.update {
+                it.copy(
+                    comfortIndexRecords = emptyList(),
+                    recordCount = recordCount
+                )
+            }
+        }
+
+
     }
 }

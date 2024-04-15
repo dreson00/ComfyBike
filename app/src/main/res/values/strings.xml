@@ -50,5 +50,8 @@
     <string name="record_max_x">Největší CI: </string>
     <string name="record_avg_x">Průměrné CI: </string>
     <string name="record_median_x">Medián: </string>
+    <string name="speed_x">Rychlost: </string>
+    <string name="label_speed_filter">Filtr rychlosti cyklisty</string>
+    <string name="label_speed_filter_no_records">Žádné záznamy odpovídající filtru</string>
 
 </resources>

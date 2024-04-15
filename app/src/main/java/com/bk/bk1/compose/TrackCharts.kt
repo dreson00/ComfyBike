@@ -5,7 +5,6 @@ import android.text.TextUtils
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -37,17 +36,17 @@ import com.patrykandpatrick.vico.core.model.lineSeries
 import java.math.RoundingMode
 
 @Composable
-fun CiDistributionColumnChart(comfortIndexRecords: State<List<ComfortIndexRecord>>) {
+fun CiDistributionColumnChart(comfortIndexRecords: List<ComfortIndexRecord>) {
     val scrollState = rememberVicoScrollState()
     val zoomState = rememberVicoZoomState(zoomEnabled = false)
     val intervals = List(10) { it * 0.1f..(it + 1) * 0.1f }
     val counts = intervals.map { interval ->
-        comfortIndexRecords.value.count { it.comfortIndex in interval }
+        comfortIndexRecords.count { it.comfortIndex in interval }
     }
 
     val chartModelProducer = remember { CartesianChartModelProducer.build() }
-    if (comfortIndexRecords.value.isNotEmpty()) {
-        LaunchedEffect(comfortIndexRecords.value.first()) {
+    if (comfortIndexRecords.isNotEmpty()) {
+        LaunchedEffect(comfortIndexRecords) {
             chartModelProducer
                 .tryRunTransaction {
                     columnSeries {
@@ -115,18 +114,18 @@ fun CiDistributionColumnChart(comfortIndexRecords: State<List<ComfortIndexRecord
 }
 
 @Composable
-fun TrackProgressLineChart(comfortIndexRecords: State<List<ComfortIndexRecord>>) {
+fun TrackProgressLineChart(comfortIndexRecords: List<ComfortIndexRecord>) {
     val scrollState = rememberVicoScrollState()
     val zoomState = rememberVicoZoomState()
     val chartModelProducer = remember { CartesianChartModelProducer.build() }
-    if (comfortIndexRecords.value.isNotEmpty()) {
-        LaunchedEffect(comfortIndexRecords.value.first()) {
+    if (comfortIndexRecords.isNotEmpty()) {
+        LaunchedEffect(comfortIndexRecords) {
             chartModelProducer
                 .tryRunTransaction {
                     lineSeries {
                         series(
-                            comfortIndexRecords.value.map { it.id - comfortIndexRecords.value.first().id + 1 },
-                            comfortIndexRecords.value.map { it.comfortIndex }
+                            comfortIndexRecords.map { it.id - comfortIndexRecords.first().id + 1 },
+                            comfortIndexRecords.map { it.comfortIndex }
                         )
                     }
                 }

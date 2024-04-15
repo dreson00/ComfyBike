@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.bk.bk1.R
 import com.bk.bk1.ui.theme.BK1Theme
-import com.bk.bk1.utilities.ParseFromDbFormat
+import com.bk.bk1.utilities.parseFromDbFormat
 import com.bk.bk1.utilities.getExternalStoragePermissionList
 import com.bk.bk1.viewModels.TrackListScreenViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -68,7 +68,7 @@ import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavController) {
 
@@ -163,7 +163,7 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                                                 text = "${stringResource(R.string.label_track_x)} ${track.id}"
                                             )
                                             Text(
-                                                text = ParseFromDbFormat(track.time),
+                                                text = parseFromDbFormat(track.time),
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 color = Color.Gray
                                             )

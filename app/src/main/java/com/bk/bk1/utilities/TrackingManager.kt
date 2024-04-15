@@ -15,7 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -117,32 +116,16 @@ class TrackingManager @Inject constructor(
             val comfortIndex = (1.0 / sqrt((1.0 / filteredAccYCount) * accelerationPowSum)).toFloat()
             scope.launch {
                 val currentLocation = location
-                if (currentLocation != null && lastTrackId != null) {
-                    val closeRecord = comfortIndexRecordDao
-                        .getRecordsByTrackId(lastTrackId!!)
-                        .first()
-                        .firstOrNull { record ->
-                            val recordLocation = Location("").apply {
-                                latitude = record.latitude
-                                longitude = record.longitude
-                            }
-                            currentLocation.distanceTo(recordLocation) <= 5
-                        }
-
-                    if (closeRecord != null) {
-                        closeRecord.comfortIndex = (closeRecord.comfortIndex + comfortIndex) / 2.0f
-                        comfortIndexRecordDao.updateRecord(closeRecord)
-                    }
-                    else {
-                        comfortIndexRecordDao.upsertRecord(
-                            ComfortIndexRecord(
-                                comfortIndex = comfortIndex,
-                                trackRecordId = lastTrackId!!,
-                                latitude = currentLocation.latitude,
-                                longitude = currentLocation.longitude
-                            )
+                if (currentLocation != null && lastTrackId != null && currentLocation.hasSpeed()) {
+                    comfortIndexRecordDao.upsertRecord(
+                        ComfortIndexRecord(
+                            comfortIndex = comfortIndex,
+                            bicycleSpeed = currentLocation.speed,
+                            trackRecordId = lastTrackId!!,
+                            latitude = currentLocation.latitude,
+                            longitude = currentLocation.longitude
                         )
-                    }
+                    )
                 }
             }
         }

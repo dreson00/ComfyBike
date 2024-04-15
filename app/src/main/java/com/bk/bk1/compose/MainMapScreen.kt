@@ -10,7 +10,6 @@ import android.view.LayoutInflater
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.DrawableRes
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
@@ -75,6 +74,7 @@ import androidx.core.graphics.BlendModeColorFilterCompat
 import androidx.core.graphics.BlendModeCompat
 import androidx.navigation.NavController
 import com.bk.bk1.R
+import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.ui.theme.BK1Theme
 import com.bk.bk1.ui.theme.DimGreen
 import com.bk.bk1.ui.theme.GreyLightBlue
@@ -96,7 +96,6 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MapsComposeExperimentalApi
-import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerInfoWindow
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
@@ -302,6 +301,7 @@ fun MainMapScreen(
                             speedDialState = SpeedDialState.Collapsed
                         }
                     }
+
                     val iconGenerator = remember { IconGenerator(context) }
                     val markerView = remember { LayoutInflater.from(context).inflate(R.layout.custom_marker_layout, null) }
                     val markerIconView = remember { markerView.findViewById<ImageView>(R.id.marker_icon) }
@@ -314,14 +314,7 @@ fun MainMapScreen(
                         )
                         if (currentComfortIndexRecords.value.isNotEmpty()) {
                             currentComfortIndexRecords.value.forEach { record ->
-                                val color = Color.hsl(mapFloatToHue(record.comfortIndex), 1f, 0.5f)
-                                MapMarker(
-                                    context = LocalContext.current,
-                                    position = LatLng(record.latitude, record.longitude),
-                                    title = "${stringResource(R.string.ci_x)}${record.comfortIndex}",
-                                    color = color,
-                                    iconResourceId = R.drawable.baseline_circle_12
-                                )
+                                ComfortIndexRecordMapMarker(record)
                             }
                         }
                     }
@@ -566,10 +559,18 @@ fun MainMapScreen(
 @Composable
 @Preview
 fun MarkerWindowPreview() {
+    val record = ComfortIndexRecord(
+        0,
+        0.5f,
+        15f,
+        2,
+        0.0,
+        0.0
+    )
     Box {
         Canvas(
             modifier = Modifier
-                .width(105.dp)
+                .width(300.dp)
                 .height(50.dp)
                 .align(Alignment.Center)
         ) {
@@ -592,17 +593,75 @@ fun MarkerWindowPreview() {
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
             modifier = Modifier
                 .clip(RoundedCornerShape(25.dp))
                 .padding(15.dp, 10.dp)
                 .align(Alignment.Center)
         ) {
-            Button(
-                onClick = { },
+            Text("${stringResource(R.string.ci_x)} ${record.comfortIndex}")
+            Text("${stringResource(R.string.speed_x)} ${record.bicycleSpeed}")
+        }
+    }
+}
 
+@Composable
+fun ComfortIndexRecordMapMarker(
+    record: ComfortIndexRecord
+) {
+    MarkerInfoWindow(
+        state = rememberMarkerState(
+            position = LatLng(record.latitude, record.longitude)
+        ),
+        icon = bitmapDescriptorFromVector(
+            LocalContext.current,
+            R.drawable.baseline_circle_12,
+            Color.hsl(mapFloatToHue(record.comfortIndex), 1f, 0.5f)),
+        onClick = { marker ->
+            marker.showInfoWindow()
+            true
+        }
+    ) {
+        Box {
+            Canvas(
+                modifier = Modifier
+                    .width(350.dp)
+                    .height(50.dp)
+                    .align(Alignment.Center)
             ) {
-                Text("Detaily")
+                val trianglePath = Path().let {
+                    it.moveTo(this.size.width * .40f, this.size.height - 2f)
+                    it.lineTo(this.size.width * .50f, this.size.height + 30f)
+                    it.lineTo(this.size.width * .60f, this.size.height - 2f)
+                    it.close()
+                    it
+                }
+                drawRoundRect(
+                    GreyLightBlue,
+                    size = Size(this.size.width, this.size.height),
+                    cornerRadius = CornerRadius(60f)
+                )
+                drawPath(
+                    path = trianglePath,
+                    GreyLightBlue,
+                )
+            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(25.dp))
+                    .padding(15.dp, 10.dp)
+                    .align(Alignment.Center)
+            ) {
+                Text(
+                    text = "${stringResource(R.string.ci_x)} ${record.comfortIndex}",
+                    color = Color.Black
+                )
+                Text(
+                    text = "${stringResource(R.string.speed_x)} ${record.bicycleSpeed}",
+                    color = Color.Black
+                )
             }
         }
     }
@@ -610,26 +669,6 @@ fun MarkerWindowPreview() {
 
 
 //https://towardsdev.com/jetpack-compose-custom-google-map-marker-erselan-khan-e6e04178a30b
-@Composable
-fun MapMarker(
-    context: Context,
-    position: LatLng,
-    title: String,
-    color: Color,
-    @DrawableRes iconResourceId: Int
-) {
-    val icon = bitmapDescriptorFromVector(context, iconResourceId, color)
-    Marker(
-        state = rememberMarkerState(position = position),
-        title = title,
-        icon = icon,
-        onClick = {
-            it.showInfoWindow()
-            true
-        }
-    )
-}
-
 fun bitmapDescriptorFromVector(
     context: Context,
     vectorResId: Int,

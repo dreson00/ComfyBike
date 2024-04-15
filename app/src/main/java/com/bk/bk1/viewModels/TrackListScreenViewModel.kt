@@ -44,7 +44,7 @@ class TrackListScreenViewModel @Inject constructor(
 
     suspend fun saveCiRecordsAsCsv(tracKRecord: TrackRecord): Int {
         val ciRecordList = comfortIndexRecordDao
-            .getRecordsByTrackId(tracKRecord.id)
+            .getRecordFlowListByTrackId(tracKRecord.id)
             .first()
         return exportManager.saveCiListAsCsv(ciRecordList, "track_${tracKRecord.id}")
     }

@@ -14,6 +14,7 @@ data class ComfortIndexRecord(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
     var comfortIndex: Float,
+    val bicycleSpeed: Float,
     val trackRecordId: Int,
     val latitude: Double,
     val longitude: Double

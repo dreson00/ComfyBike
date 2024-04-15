@@ -154,7 +154,7 @@ class MainMapScreenViewModel @Inject constructor(
     fun onCurrentTrackIdChangedEvent(event: CurrentTrackIdChangedEvent) {
         if (event.currentTrackId != null) {
             currentComfortIndexRecordsFlow = comfortIndexRecordDao
-                .getRecordsByTrackId(event.currentTrackId)
+                .getRecordFlowListByTrackId(event.currentTrackId)
             firstComfortIndexRecordForAllExceptCurrent = comfortIndexRecordDao
                 .getFirstComfortIndexRecordForAllExceptCurrent(event.currentTrackId)
         }

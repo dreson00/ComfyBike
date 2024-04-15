@@ -8,6 +8,8 @@ import android.location.LocationManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
@@ -97,7 +99,10 @@ class MainActivity : ComponentActivity() {
                             type = NavType.IntType
                         })) { backStackEntry ->
                         val viewModel = hiltViewModel<TrackDetailScreenViewModel>()
+                        val state by viewModel.state.collectAsState()
                         TrackDetailScreen(
+                            state,
+                            viewModel::onEvent,
                             viewModel,
                             navController,
                             backStackEntry.arguments?.getInt("trackId")

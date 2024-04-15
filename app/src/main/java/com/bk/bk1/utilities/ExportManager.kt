@@ -31,9 +31,9 @@ class ExportManager {
 
         return try {
             file.bufferedWriter().use { out ->
-                out.write("comfortIndex,latitude,longitude\n")
+                out.write("comfortIndex,speed,latitude,longitude\n")
                 records.forEach { record ->
-                    out.write("${record.comfortIndex},${record.latitude},${record.longitude}\n")
+                    out.write("${record.comfortIndex},${record.bicycleSpeed},${record.latitude},${record.longitude}\n")
                 }
             }
             0

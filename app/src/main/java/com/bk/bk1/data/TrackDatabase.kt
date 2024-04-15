@@ -7,29 +7,9 @@ import com.bk.bk1.models.TrackRecord
 
 @Database(
     entities = [TrackRecord::class, ComfortIndexRecord::class],
-    version = 2
+    version = 3
 )
 abstract class TrackDatabase : RoomDatabase() {
-
     abstract val trackRecordDao: TrackRecordDao
     abstract val comfortIndexRecordDao: ComfortIndexRecordDao
-
-//    companion object {
-//
-//        @Volatile
-//        private var INSTANCE: TrackDatabase? = null
-//        fun getDatabase(context: Context): TrackDatabase {
-//            return INSTANCE ?: synchronized(this) {
-//                val instance = Room.databaseBuilder(
-//                    context.applicationContext,
-//                    TrackDatabase::class.java,
-//                    "MyRemoteDatabase"
-//                ).fallbackToDestructiveMigration().build()
-//
-//                INSTANCE = instance
-//
-//                instance
-//            }
-//        }
-//    }
 }

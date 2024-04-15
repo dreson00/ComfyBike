@@ -89,15 +89,8 @@ fun MapScreenshotterScreen(
                         MapEffect { map ->
                             map.setMapStyle(MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_no_poi))
                         }
-                        comfortIndexRecords.value.forEach { item ->
-                            val color = Color.hsl(mapFloatToHue(item.comfortIndex), 1f, 0.5f)
-                            MapMarker(
-                                context = LocalContext.current,
-                                position = LatLng(item.latitude, item.longitude),
-                                title = "${stringResource(R.string.label_comfort_index)}${item.comfortIndex}",
-                                color = color,
-                                iconResourceId = R.drawable.baseline_circle_12
-                            )
+                        comfortIndexRecords.value.forEach { record ->
+                            ComfortIndexRecordMapMarker(record)
                         }
                     }
                 }

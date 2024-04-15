@@ -35,6 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -43,11 +44,11 @@ import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -64,9 +65,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import com.bk.bk1.R
+import com.bk.bk1.events.TrackDetailScreenEvent
 import com.bk.bk1.models.ComfortIndexRecord
+import com.bk.bk1.states.TrackDetailScreenState
 import com.bk.bk1.ui.theme.BK1Theme
-import com.bk.bk1.utilities.ParseFromDbFormat
 import com.bk.bk1.viewModels.TrackDetailScreenViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
@@ -106,24 +108,27 @@ import kotlin.random.Random
 )
 @Composable
 fun TrackDetailScreen(
+    state: TrackDetailScreenState,
+    onEvent: (TrackDetailScreenEvent) -> Unit,
     viewModel: TrackDetailScreenViewModel,
     navController: NavController,
     trackId: Int?
 ) {
-    if (trackId == null) {
-        navController.popBackStack()
+    LaunchedEffect(Unit) {
+        if (trackId == null) {
+            navController.popBackStack()
+        }
+        else {
+            onEvent(TrackDetailScreenEvent.SetTrackId(trackId))
+        }
     }
-    val trackRecord = viewModel.getTrackRecordById(trackId!!).collectAsState(null)
 
-    if (trackRecord.value == null) {
-        return
+    LaunchedEffect(state.trackId) {
+        onEvent(TrackDetailScreenEvent.FilterRecordsBySpeed(0f..30f))
     }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val comfortIndexRecords = viewModel
-        .getComfortIndexRecordsByTrackId(trackId)
-        .collectAsState(emptyList())
     val cameraPositionState = rememberCameraPositionState()
     val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(
         SheetState(
@@ -133,6 +138,7 @@ fun TrackDetailScreen(
     )
     val bottomSheetMove = remember { mutableStateOf(BottomSheetMoves.MovingDown) }
     val orientation = LocalConfiguration.current.orientation
+    val comfortIndexRecords = state.comfortIndexRecords
 
     BottomSheetScaffold(
         scaffoldState = bottomSheetScaffoldState,
@@ -176,48 +182,43 @@ fun TrackDetailScreen(
                     modifier = Modifier.size(0.dp)
                 )
                 TrackDetailCard {
-                    val recordCount = comfortIndexRecords.value.count()
+                    var sliderPosition by remember { mutableStateOf(0f..30f) }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(stringResource(R.string.label_speed_filter))
+                        RangeSlider(
+                            value = sliderPosition,
+                            onValueChange = { range -> sliderPosition = range },
+                            valueRange = 0f..30f,
+                            onValueChangeFinished = {
+                                onEvent(TrackDetailScreenEvent.FilterRecordsBySpeed(sliderPosition))
+                            },
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("%.2f km/h".format(sliderPosition.start))
+                            Text("%.2f km/h".format(sliderPosition.endInclusive))
+                        }
+                    }
+                }
+
+                val recordCount = state.recordCount
+                TrackDetailCard {
+                    Text("${stringResource(R.string.record_time_x)} ${state.recordTime}")
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .clip(RoundedCornerShape(25.dp))
+                            .height(2.dp)
+                            .fillMaxWidth()
+                            .background(color = Color.Gray)
+                    )
 
                     if (recordCount > 0) {
-                        val dateString = remember {
-                            ParseFromDbFormat(trackRecord.value!!.time)
-                        }
-                        Text("${stringResource(R.string.record_time_x)} $dateString")
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .clip(RoundedCornerShape(25.dp))
-                                .height(2.dp)
-                                .fillMaxWidth()
-                                .background(color = Color.Gray)
-                        )
-
-                        val minimumCi = remember {
-                            comfortIndexRecords.value.minBy { it.comfortIndex }.comfortIndex
-                        }
-                        val maximumCi = remember {
-                            comfortIndexRecords.value.maxBy { it.comfortIndex }.comfortIndex
-                        }
-                        val averageCi = remember {
-                            (comfortIndexRecords
-                                .value
-                                .sumOf {
-                                    it.comfortIndex.toDouble()
-                                } / recordCount).toFloat()
-                        }
-                        val medianCi = remember {
-                            if (recordCount % 2 == 0) {
-                                val midIndex1 = recordCount / 2
-                                val midIndex2 = midIndex1 - 1
-                                (comfortIndexRecords.value[midIndex1].comfortIndex
-                                        + comfortIndexRecords.value[midIndex2].comfortIndex) / 2
-                            } else {
-                                val midIndex = recordCount / 2
-                                comfortIndexRecords.value[midIndex].comfortIndex
-                            }
-                        }
-
                         TrackDetailTable(
                             leftColumn = {
                                 Text(stringResource(R.string.record_count_x))
@@ -228,19 +229,25 @@ fun TrackDetailScreen(
                             },
                             rightColumn = {
                                 Text("$recordCount")
-                                Text("$minimumCi")
-                                Text("$maximumCi")
-                                Text("$averageCi")
-                                Text("$medianCi")
+                                Text("%.6f".format(state.ciMin))
+                                Text("%.6f".format(state.ciMax))
+                                Text("%.6f".format(state.ciAvg))
+                                Text("%.6f".format(state.ciMedian))
                             }
                         )
                     }
+                    else {
+                        Text(stringResource(R.string.label_speed_filter_no_records))
+                    }
                 }
-                TrackDetailCard {
-                    TrackProgressLineChart(comfortIndexRecords)
-                }
-                TrackDetailCard {
-                    CiDistributionColumnChart(comfortIndexRecords)
+
+                if (recordCount > 0) {
+                    TrackDetailCard {
+                        TrackProgressLineChart(comfortIndexRecords)
+                    }
+                    TrackDetailCard {
+                        CiDistributionColumnChart(comfortIndexRecords)
+                    }
                 }
                 Box(
                     modifier = Modifier
@@ -252,7 +259,8 @@ fun TrackDetailScreen(
         sheetContent = {
             val spacing: Dp by animateDpAsState(
                 if (bottomSheetMove.value == BottomSheetMoves.MovingDown)
-                    35.dp else (-70).dp, label = "Bottom sheet spacing animation",
+                    35.dp else (-70).dp,
+                label = "Bottom sheet spacing animation",
                 animationSpec = spring()
             )
             Column(
@@ -301,10 +309,9 @@ fun TrackDetailScreen(
                         )
                     }
                 }
-                if (comfortIndexRecords.value.isNotEmpty()) {
-                    val recordsValue = comfortIndexRecords.value
-                    val middleRecord = recordsValue[recordsValue.count() / 2]
-                    LaunchedEffect(comfortIndexRecords.value.first()) {
+                if (comfortIndexRecords.isNotEmpty()) {
+                    val middleRecord = comfortIndexRecords[comfortIndexRecords.count() / 2]
+                    LaunchedEffect(comfortIndexRecords) {
                         cameraPositionState.animate(CameraUpdateFactory.zoomTo(17F))
                         cameraPositionState.animate(
                             CameraUpdateFactory
@@ -323,15 +330,8 @@ fun TrackDetailScreen(
                     MapEffect { map ->
                         map.setMapStyle(MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_no_poi))
                     }
-                    comfortIndexRecords.value.forEach { item ->
-                        val color = Color.hsl(mapFloatToHue(item.comfortIndex), 1f, 0.5f)
-                        MapMarker(
-                            context = LocalContext.current,
-                            position = LatLng(item.latitude, item.longitude),
-                            title = "${stringResource(R.string.ci_x)} ${item.comfortIndex}",
-                            color = color,
-                            iconResourceId = R.drawable.baseline_circle_12
-                        )
+                    comfortIndexRecords.forEach { record ->
+                        ComfortIndexRecordMapMarker(record)
                     }
                 }
             }
@@ -411,6 +411,7 @@ fun LineChartCardPreview() {
                 .add(
                     ComfortIndexRecord(
                         i.toLong(),
+                        Random.nextDouble(0.0, 1.0).toFloat(),
                         Random.nextDouble(0.0, 1.0).toFloat(),
                         trackRecordId = 1,
                         latitude = 0.0,
@@ -500,6 +501,7 @@ fun ColumnChartCardPreview() {
                 .add(
                     ComfortIndexRecord(
                         i.toLong(),
+                        Random.nextDouble(0.0, 1.0).toFloat(),
                         Random.nextDouble(0.0, 1.0).toFloat(),
                         trackRecordId = 1,
                         latitude = 0.0,

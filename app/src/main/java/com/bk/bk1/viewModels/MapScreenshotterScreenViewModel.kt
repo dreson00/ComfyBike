@@ -16,7 +16,7 @@ class MapScreenshotterScreenViewModel @Inject constructor(
 ) : ViewModel() {
     fun getComfortIndexRecordsByTrackId(
         trackId: Int
-    ): Flow<List<ComfortIndexRecord>> = comfortIndexRecordDao.getRecordsByTrackId(trackId)
+    ): Flow<List<ComfortIndexRecord>> = comfortIndexRecordDao.getRecordFlowListByTrackId(trackId)
 
     fun saveImage(bitmap: Bitmap, trackId: Int): Int {
         return exportManager.saveBitmapAsPng(bitmap, "track_$trackId")
