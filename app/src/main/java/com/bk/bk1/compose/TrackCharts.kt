@@ -120,11 +120,12 @@ fun TrackProgressLineChart(comfortIndexRecords: List<ComfortIndexRecord>) {
     val chartModelProducer = remember { CartesianChartModelProducer.build() }
     if (comfortIndexRecords.isNotEmpty()) {
         LaunchedEffect(comfortIndexRecords) {
+            var id = 1
             chartModelProducer
                 .tryRunTransaction {
                     lineSeries {
                         series(
-                            comfortIndexRecords.map { it.id - comfortIndexRecords.first().id + 1 },
+                            comfortIndexRecords.map { id++ },
                             comfortIndexRecords.map { it.comfortIndex }
                         )
                     }

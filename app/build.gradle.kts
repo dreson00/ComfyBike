@@ -121,6 +121,7 @@ dependencies {
 
     //Screenshot
     implementation("com.github.SmartToolFactory:Compose-Screenshot:1.0.3")
+//    implementation("com.github.lucasxvirtual:compose-screen-capture:1.0.0")
 
     //Charts
     implementation("com.patrykandpatrick.vico:compose:2.0.0-alpha.12")

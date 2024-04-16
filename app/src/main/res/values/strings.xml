@@ -44,7 +44,7 @@
     <string name="btn_csv">CSV</string>
     <string name="btn_img">Obrázek</string>
     <string name="info_csv_exp_succ">CSV soubor byl uložen do složky Documents/ComfyBike.</string>
-    <string name="info_csv_exp_err">Při exportu se vyskytla chyba.</string>
+    <string name="info_exp_err">Při exportu se vyskytla chyba.</string>
     <string name="btn_delete">Smazat</string>
     <string name="record_min_x">Nejmenší CI: </string>
     <string name="record_max_x">Největší CI: </string>
@@ -53,5 +53,7 @@
     <string name="speed_x">Rychlost: </string>
     <string name="label_speed_filter">Filtr rychlosti cyklisty</string>
     <string name="label_speed_filter_no_records">Žádné záznamy odpovídající filtru</string>
+    <string name="label_add_speed_filter_watermark">Přidat razítko s filtrem rychlostí</string>
+    <string name="label_speed_range_x">Rozsah rychlosti: </string>
 
 </resources>

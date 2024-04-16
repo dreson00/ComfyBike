@@ -35,7 +35,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -48,7 +47,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -69,7 +67,6 @@ import com.bk.bk1.events.TrackDetailScreenEvent
 import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.states.TrackDetailScreenState
 import com.bk.bk1.ui.theme.BK1Theme
-import com.bk.bk1.viewModels.TrackDetailScreenViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
@@ -110,7 +107,6 @@ import kotlin.random.Random
 fun TrackDetailScreen(
     state: TrackDetailScreenState,
     onEvent: (TrackDetailScreenEvent) -> Unit,
-    viewModel: TrackDetailScreenViewModel,
     navController: NavController,
     trackId: Int?
 ) {
@@ -124,7 +120,7 @@ fun TrackDetailScreen(
     }
 
     LaunchedEffect(state.trackId) {
-        onEvent(TrackDetailScreenEvent.FilterRecordsBySpeed(0f..30f))
+        onEvent(TrackDetailScreenEvent.FilterRecordsBySpeed(state.speedMin..state.speedMax))
     }
 
     val scope = rememberCoroutineScope()
@@ -182,26 +178,11 @@ fun TrackDetailScreen(
                     modifier = Modifier.size(0.dp)
                 )
                 TrackDetailCard {
-                    var sliderPosition by remember { mutableStateOf(0f..30f) }
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    SpeedFilterSlider(
+                        state.speedMin..state.speedMax,
+                        state.speedMin..state.speedMax
                     ) {
-                        Text(stringResource(R.string.label_speed_filter))
-                        RangeSlider(
-                            value = sliderPosition,
-                            onValueChange = { range -> sliderPosition = range },
-                            valueRange = 0f..30f,
-                            onValueChangeFinished = {
-                                onEvent(TrackDetailScreenEvent.FilterRecordsBySpeed(sliderPosition))
-                            },
-                        )
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("%.2f km/h".format(sliderPosition.start))
-                            Text("%.2f km/h".format(sliderPosition.endInclusive))
-                        }
+                        onEvent(TrackDetailScreenEvent.FilterRecordsBySpeed(it))
                     }
                 }
 
@@ -331,7 +312,7 @@ fun TrackDetailScreen(
                         map.setMapStyle(MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_no_poi))
                     }
                     comfortIndexRecords.forEach { record ->
-                        ComfortIndexRecordMapMarker(record)
+                        UnoptimizedComfortIndexRecordMapMarker(record)
                     }
                 }
             }

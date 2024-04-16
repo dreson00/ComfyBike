@@ -11,4 +11,6 @@ data class TrackDetailScreenState(
     val ciMax: Double = 0.0,
     val ciAvg: Double = 0.0,
     val ciMedian: Double = 0.0,
+    val speedMin: Float = 0f,
+    val speedMax: Float = 30f
 )

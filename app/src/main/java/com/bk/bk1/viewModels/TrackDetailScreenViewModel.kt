@@ -39,13 +39,17 @@ class TrackDetailScreenViewModel @Inject constructor(
     private fun setTrackId(trackId: Int) {
         viewModelScope.launch {
             _comfortIndexRecords = comfortIndexRecordDao.getRecordListByTrackId(trackId)
+            val speedMin = _comfortIndexRecords.minBy { it.bicycleSpeed }.bicycleSpeed
+            val speedMax = _comfortIndexRecords.maxBy { it.bicycleSpeed }.bicycleSpeed
             trackRecordDao.getTrackRecordById(trackId)?.let { trackRecord ->
                 _trackRecord = trackRecord
                 state.update {
                     it.copy(
                         trackId = trackId,
                         comfortIndexRecords = _comfortIndexRecords,
-                        recordTime = parseFromDbFormat(trackRecord.time)
+                        recordTime = parseFromDbFormat(trackRecord.time),
+                        speedMin = speedMin,
+                        speedMax = speedMax
                     )
                 }
             }

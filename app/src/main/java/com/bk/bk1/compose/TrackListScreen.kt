@@ -59,8 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.bk.bk1.R
 import com.bk.bk1.ui.theme.BK1Theme
-import com.bk.bk1.utilities.parseFromDbFormat
 import com.bk.bk1.utilities.getExternalStoragePermissionList
+import com.bk.bk1.utilities.parseFromDbFormat
 import com.bk.bk1.viewModels.TrackListScreenViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -209,7 +209,7 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                                                                             context.getText(R.string.info_csv_exp_succ)
                                                                         }
                                                                         else {
-                                                                            context.getText(R.string.info_csv_exp_err)
+                                                                            context.getText(R.string.info_exp_err)
                                                                         }
                                                                         Toast.makeText(
                                                                             context,

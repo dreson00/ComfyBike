@@ -97,6 +97,7 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.MarkerInfoWindow
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import com.google.maps.android.ui.IconGenerator
@@ -613,6 +614,66 @@ fun ComfortIndexRecordMapMarker(
         state = rememberMarkerState(
             position = LatLng(record.latitude, record.longitude)
         ),
+        icon = bitmapDescriptorFromVector(
+            LocalContext.current,
+            R.drawable.baseline_circle_12,
+            Color.hsl(mapFloatToHue(record.comfortIndex), 1f, 0.5f)),
+        onClick = { marker ->
+            marker.showInfoWindow()
+            true
+        }
+    ) {
+        Box {
+            Canvas(
+                modifier = Modifier
+                    .width(350.dp)
+                    .height(50.dp)
+                    .align(Alignment.Center)
+            ) {
+                val trianglePath = Path().let {
+                    it.moveTo(this.size.width * .40f, this.size.height - 2f)
+                    it.lineTo(this.size.width * .50f, this.size.height + 30f)
+                    it.lineTo(this.size.width * .60f, this.size.height - 2f)
+                    it.close()
+                    it
+                }
+                drawRoundRect(
+                    GreyLightBlue,
+                    size = Size(this.size.width, this.size.height),
+                    cornerRadius = CornerRadius(60f)
+                )
+                drawPath(
+                    path = trianglePath,
+                    GreyLightBlue,
+                )
+            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(25.dp))
+                    .padding(15.dp, 10.dp)
+                    .align(Alignment.Center)
+            ) {
+                Text(
+                    text = "${stringResource(R.string.ci_x)} ${record.comfortIndex}",
+                    color = Color.Black
+                )
+                Text(
+                    text = "${stringResource(R.string.speed_x)} ${record.bicycleSpeed}",
+                    color = Color.Black
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun UnoptimizedComfortIndexRecordMapMarker(
+    record: ComfortIndexRecord,
+) {
+    MarkerInfoWindow(
+        state = MarkerState(LatLng(record.latitude, record.longitude)),
         icon = bitmapDescriptorFromVector(
             LocalContext.current,
             R.drawable.baseline_circle_12,
