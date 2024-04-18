@@ -4,12 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bk.bk1.data.ComfortIndexRecordDao
 import com.bk.bk1.data.TrackRecordDao
-import com.bk.bk1.events.TrackDetailScreenEvent
 import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.models.TrackRecord
 import com.bk.bk1.states.TrackDetailScreenState
 import com.bk.bk1.utilities.parseFromDbFormat
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -25,38 +25,41 @@ class TrackDetailScreenViewModel @Inject constructor(
     private var _comfortIndexRecords = emptyList<ComfortIndexRecord>()
     private lateinit var _trackRecord: TrackRecord
 
-    fun onEvent(event: TrackDetailScreenEvent) {
-        when (event) {
-            is TrackDetailScreenEvent.SetTrackId -> {
-                setTrackId(event.trackId)
-            }
-            is TrackDetailScreenEvent.FilterRecordsBySpeed -> {
-                filterRecordsBySpeedRange(event.speedRange)
-            }
-        }
-    }
+//    val trackId = MutableStateFlow(0)
+//    val comfortIndexRecords = MutableStateFlow<List<ComfortIndexRecord>>(emptyList())
+//    val recordTime = MutableStateFlow(String())
+//    val recordCount = MutableStateFlow(0)
+//    val ciMin = MutableStateFlow(0.0)
+//    val ciMax = MutableStateFlow(0.0)
+//    val ciAvg = MutableStateFlow(0.0)
+//    val ciMedian = MutableStateFlow(0.0)
+//    val speedMin = MutableStateFlow(0f)
+//    val speedMax = MutableStateFlow(30f)
 
-    private fun setTrackId(trackId: Int) {
-        viewModelScope.launch {
+    fun initTrackData(trackId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
             _comfortIndexRecords = comfortIndexRecordDao.getRecordListByTrackId(trackId)
             val speedMin = _comfortIndexRecords.minBy { it.bicycleSpeed }.bicycleSpeed
             val speedMax = _comfortIndexRecords.maxBy { it.bicycleSpeed }.bicycleSpeed
+            filterRecordsBySpeedRange(speedMin..speedMax)
+
             trackRecordDao.getTrackRecordById(trackId)?.let { trackRecord ->
                 _trackRecord = trackRecord
                 state.update {
                     it.copy(
+                        speedMin = speedMin,
+                        speedMax = speedMax,
                         trackId = trackId,
                         comfortIndexRecords = _comfortIndexRecords,
                         recordTime = parseFromDbFormat(trackRecord.time),
-                        speedMin = speedMin,
-                        speedMax = speedMax
+                        dataLoaded = true
                     )
                 }
             }
         }
     }
 
-    private fun filterRecordsBySpeedRange(speedRange: ClosedFloatingPointRange<Float>) {
+    fun filterRecordsBySpeedRange(speedRange: ClosedFloatingPointRange<Float>) {
         val comfortIndexRecords = _comfortIndexRecords.filter {
             it.bicycleSpeed in speedRange
         }

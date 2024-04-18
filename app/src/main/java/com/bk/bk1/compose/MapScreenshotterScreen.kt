@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,18 +22,23 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -43,8 +49,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.bk.bk1.R
 import com.bk.bk1.enums.ImageSavingStatus
-import com.bk.bk1.events.MapScreenshotterScreenEvent
-import com.bk.bk1.states.MapScreenshotterScreenState
 import com.bk.bk1.ui.theme.DimGreen
 import com.bk.bk1.ui.theme.Red700
 import com.bk.bk1.viewModels.MapScreenshotterScreenViewModel
@@ -54,26 +58,24 @@ import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.smarttoolfactory.screenshot.ScreenshotBox
 import com.smarttoolfactory.screenshot.rememberScreenshotState
 
-@OptIn(MapsComposeExperimentalApi::class)
 @Composable
 fun MapScreenshotterScreen(
-    state: MapScreenshotterScreenState,
-    onEvent: (MapScreenshotterScreenEvent) -> Unit,
     viewModel: MapScreenshotterScreenViewModel,
     navController: NavController,
     trackId: Int?
 ) {
+    val state by viewModel.state.collectAsState()
     val screenshotState = rememberScreenshotState()
     val context = LocalContext.current
 
     if (screenshotState.bitmap != null && trackId != null) {
         LaunchedEffect(Unit) {
-            onEvent(MapScreenshotterScreenEvent.SaveImage(screenshotState.bitmap!!, trackId))
+            viewModel.setImageSavingStatus(ImageSavingStatus.PROCESSING)
+            viewModel.saveImage(screenshotState.bitmap!!, trackId)
         }
     }
 
@@ -110,7 +112,7 @@ fun MapScreenshotterScreen(
             val cameraPositionState = rememberCameraPositionState()
             trackId?.let {
                 LaunchedEffect(Unit) {
-                    onEvent(MapScreenshotterScreenEvent.SetTrackId(it))
+                    viewModel.initTrackData(it)
                 }
                 val comfortIndexRecords = state.comfortIndexRecords
 
@@ -164,23 +166,36 @@ fun MapScreenshotterScreen(
             }
 
 
-            if (state.showSettings && !state.captureMode) {
-                SettingsCard(state, onEvent)
+            if (state.showSettings && !state.hideUI) {
+                SettingsCard(viewModel)
             }
 
-            if (!state.captureMode) {
+            if (state.imageSavingStatus == ImageSavingStatus.PROCESSING) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(0.5f)
+                        .align(Alignment.Center),
+                ) { }
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .width(64.dp)
+                        .align(Alignment.Center),
+                )
+            }
+
+            if (!state.hideUI) {
                 ButtonRow(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 20.dp),
                     navController,
-                    state,
-                    onEvent
+                    viewModel
                 )
             }
 
-            if (state.captureMode) {
+            if (state.beginCapture) {
                 LaunchedEffect(Unit) {
                     screenshotState.capture()
                 }
@@ -191,9 +206,9 @@ fun MapScreenshotterScreen(
 
 @Composable
 fun SettingsCard(
-    state: MapScreenshotterScreenState,
-    onEvent: (MapScreenshotterScreenEvent) -> Unit
+    viewModel: MapScreenshotterScreenViewModel
 ) {
+    val state by viewModel.state.collectAsState()
     ElevatedCard(
         modifier = Modifier
             .padding(10.dp),
@@ -209,10 +224,9 @@ fun SettingsCard(
                     .padding(10.dp)
             ) {
                 SpeedFilterSlider(
-                    state.speedMin..state.speedMax,
-                    state.speedFilterRange
+                    speedRange = state.speedMin..state.speedMax
                 ) {
-                    onEvent(MapScreenshotterScreenEvent.FilterRecordsBySpeed(it))
+                    viewModel.filterRecordsBySpeedRange(it)
                 }
             }
             Row(
@@ -222,7 +236,7 @@ fun SettingsCard(
                     .toggleable(
                         value = state.showSpeedFilterWatermark,
                         onValueChange = {
-                            onEvent(MapScreenshotterScreenEvent.ToggleSpeedFilterWatermark)
+                            viewModel.toggleSpeedFilterWatermark()
                         }
                     )
                     .padding(horizontal = 10.dp),
@@ -240,7 +254,7 @@ fun SettingsCard(
             }
             ElevatedButton(
                 onClick = {
-                    onEvent(MapScreenshotterScreenEvent.ToggleSettingsVisible)
+                    viewModel.toggleSettingsVisible()
                 },
                 colors = ButtonDefaults
                     .elevatedButtonColors(containerColor = MaterialTheme.colorScheme.background)
@@ -259,9 +273,9 @@ fun SettingsCard(
 fun ButtonRow(
     modifier: Modifier,
     navController: NavController,
-    state: MapScreenshotterScreenState,
-    onEvent: (MapScreenshotterScreenEvent) -> Unit
+    viewModel: MapScreenshotterScreenViewModel
 ) {
+    val state by viewModel.state.collectAsState()
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.SpaceAround,
@@ -274,10 +288,10 @@ fun ButtonRow(
             contentPadding = PaddingValues(0.dp),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 5.dp),
             shape = RoundedCornerShape(30.dp),
-            enabled = !state.captureMode,
+            enabled = !state.hideUI,
             onClick = {
-                onEvent(MapScreenshotterScreenEvent.HideSettings)
-                onEvent(MapScreenshotterScreenEvent.HideUI)
+                viewModel.hideUI()
+                viewModel.beginCapture()
             }
         ) {
             Icon(
@@ -286,21 +300,24 @@ fun ButtonRow(
                 tint = Color.Black
             )
         }
-        Button(
-            modifier = Modifier
-                .size(40.dp),
-            contentPadding = PaddingValues(0.dp),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 5.dp),
-            shape = RoundedCornerShape(30.dp),
-            enabled = !state.captureMode,
-            onClick = {
-                onEvent(MapScreenshotterScreenEvent.ToggleSettingsVisible)
+
+        if (state.speedMin != state.speedMax) {
+            Button(
+                modifier = Modifier
+                    .size(40.dp),
+                contentPadding = PaddingValues(0.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 5.dp),
+                shape = RoundedCornerShape(30.dp),
+                enabled = !state.hideUI,
+                onClick = {
+                    viewModel.toggleSettingsVisible()
+                }
+            ) {
+                Icon(
+                    Icons.Rounded.Settings,
+                    ""
+                )
             }
-        ) {
-            Icon(
-                Icons.Rounded.Settings,
-                ""
-            )
         }
         Button(
             modifier = Modifier
@@ -309,7 +326,7 @@ fun ButtonRow(
             contentPadding = PaddingValues(0.dp),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 5.dp),
             shape = RoundedCornerShape(30.dp),
-            enabled = !state.captureMode,
+            enabled = !state.hideUI,
             onClick = {
                 navController.popBackStack()
             }

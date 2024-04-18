@@ -11,7 +11,8 @@ data class MapScreenshotterScreenState(
     val speedMin: Float = 0f,
     val speedMax: Float = 30f,
     val showSettings: Boolean = false,
-    val captureMode: Boolean = false,
+    val hideUI: Boolean = false,
+    val beginCapture: Boolean = false,
     val imageSavingStatus: ImageSavingStatus = ImageSavingStatus.IDLE
 
 )

@@ -43,6 +43,7 @@ import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,15 +64,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import com.bk.bk1.R
-import com.bk.bk1.events.TrackDetailScreenEvent
 import com.bk.bk1.models.ComfortIndexRecord
-import com.bk.bk1.states.TrackDetailScreenState
 import com.bk.bk1.ui.theme.BK1Theme
+import com.bk.bk1.viewModels.TrackDetailScreenViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapEffect
+import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -105,24 +105,22 @@ import kotlin.random.Random
 )
 @Composable
 fun TrackDetailScreen(
-    state: TrackDetailScreenState,
-    onEvent: (TrackDetailScreenEvent) -> Unit,
+    viewModel: TrackDetailScreenViewModel,
     navController: NavController,
     trackId: Int?
 ) {
+
+    // Initialize data to display or return back if trackId is null
     LaunchedEffect(Unit) {
         if (trackId == null) {
             navController.popBackStack()
         }
         else {
-            onEvent(TrackDetailScreenEvent.SetTrackId(trackId))
+            viewModel.initTrackData(trackId)
         }
     }
 
-    LaunchedEffect(state.trackId) {
-        onEvent(TrackDetailScreenEvent.FilterRecordsBySpeed(state.speedMin..state.speedMax))
-    }
-
+    val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val cameraPositionState = rememberCameraPositionState()
@@ -136,6 +134,7 @@ fun TrackDetailScreen(
     val orientation = LocalConfiguration.current.orientation
     val comfortIndexRecords = state.comfortIndexRecords
 
+    // Main scaffold with a topBar, bottomSheet and content
     BottomSheetScaffold(
         scaffoldState = bottomSheetScaffoldState,
         sheetSwipeEnabled = false,
@@ -147,9 +146,10 @@ fun TrackDetailScreen(
         containerColor = MaterialTheme.colorScheme.background,
         sheetContainerColor = Color.Transparent,
         sheetContentColor = Color.Transparent,
-        modifier = Modifier
-            .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         topBar = {
+
+            //topBar with track name and back button
             TopAppBar(
                 title = { Text("${stringResource(R.string.label_track_x)} $trackId") },
                 navigationIcon = {
@@ -167,6 +167,8 @@ fun TrackDetailScreen(
             )
         },
         content = {
+
+            // Content in column layout
             Column(
                 modifier = Modifier
                     .padding(PaddingValues(15.dp, 0.dp))
@@ -174,18 +176,24 @@ fun TrackDetailScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(15.dp)
             ) {
+
+                // Box to add padding without affecting card elevation shadows
                 Box(
                     modifier = Modifier.size(0.dp)
                 )
-                TrackDetailCard {
-                    SpeedFilterSlider(
-                        state.speedMin..state.speedMax,
-                        state.speedMin..state.speedMax
-                    ) {
-                        onEvent(TrackDetailScreenEvent.FilterRecordsBySpeed(it))
+
+                // Card with range filter slider
+                if (state.dataLoaded && state.speedMin != state.speedMax) {
+                    TrackDetailCard {
+                        SpeedFilterSlider(
+                            speedRange = state.speedMin..state.speedMax
+                        ) {
+                            viewModel.filterRecordsBySpeedRange(it)
+                        }
                     }
                 }
 
+                // Card with track info table
                 val recordCount = state.recordCount
                 TrackDetailCard {
                     Text("${stringResource(R.string.record_time_x)} ${state.recordTime}")
@@ -222,6 +230,7 @@ fun TrackDetailScreen(
                     }
                 }
 
+                // If there are any CI records, display a card with two graphs
                 if (recordCount > 0) {
                     TrackDetailCard {
                         TrackProgressLineChart(comfortIndexRecords)
@@ -230,6 +239,8 @@ fun TrackDetailScreen(
                         CiDistributionColumnChart(comfortIndexRecords)
                     }
                 }
+
+                // Another box for padding
                 Box(
                     modifier = Modifier
                         .height(70.dp)
@@ -238,12 +249,16 @@ fun TrackDetailScreen(
             }
         },
         sheetContent = {
+
+            // animation for button spacing change when sheet is expanding / hiding
             val spacing: Dp by animateDpAsState(
                 if (bottomSheetMove.value == BottomSheetMoves.MovingDown)
                     35.dp else (-70).dp,
                 label = "Bottom sheet spacing animation",
                 animationSpec = spring()
             )
+
+            // Column layout with sheet toggle button and map
             Column(
                 modifier = Modifier
                     .background(Color.Transparent)
@@ -290,6 +305,8 @@ fun TrackDetailScreen(
                         )
                     }
                 }
+
+                // If there are any records, zoom on the middle one on the map
                 if (comfortIndexRecords.isNotEmpty()) {
                     val middleRecord = comfortIndexRecords[comfortIndexRecords.count() / 2]
                     LaunchedEffect(comfortIndexRecords) {
@@ -303,14 +320,15 @@ fun TrackDetailScreen(
                 GoogleMap(
                     uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
                     cameraPositionState = cameraPositionState,
+                    properties = MapProperties(
+                        mapStyleOptions = MapStyleOptions
+                            .loadRawResourceStyle(context, R.raw.map_style_no_poi)
+                    ),
                     modifier = Modifier
                         .background(color = MaterialTheme.colorScheme.background)
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp, 24.dp, 0.dp, 0.dp))
                 ) {
-                    MapEffect { map ->
-                        map.setMapStyle(MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style_no_poi))
-                    }
                     comfortIndexRecords.forEach { record ->
                         UnoptimizedComfortIndexRecordMapMarker(record)
                     }

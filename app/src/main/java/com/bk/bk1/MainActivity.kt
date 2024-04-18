@@ -89,8 +89,6 @@ class MainActivity : ComponentActivity() {
                         val viewModel = hiltViewModel<MapScreenshotterScreenViewModel>()
                         val state by viewModel.state.collectAsState()
                         MapScreenshotterScreen(
-                            state,
-                            viewModel::onEvent,
                             viewModel,
                             navController,
                             backStackEntry.arguments?.getInt("trackId")
@@ -102,10 +100,8 @@ class MainActivity : ComponentActivity() {
                             type = NavType.IntType
                         })) { backStackEntry ->
                         val viewModel = hiltViewModel<TrackDetailScreenViewModel>()
-                        val state by viewModel.state.collectAsState()
                         TrackDetailScreen(
-                            state,
-                            viewModel::onEvent,
+                            viewModel,
                             navController,
                             backStackEntry.arguments?.getInt("trackId")
                         )

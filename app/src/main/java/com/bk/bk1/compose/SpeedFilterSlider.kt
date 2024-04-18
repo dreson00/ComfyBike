@@ -19,10 +19,9 @@ import com.bk.bk1.R
 @Composable
 fun SpeedFilterSlider(
     speedRange: ClosedFloatingPointRange<Float>,
-    startValue: ClosedFloatingPointRange<Float>,
     onValuesChanged: (ClosedFloatingPointRange<Float>) -> Unit
 ) {
-    var sliderPosition by remember { mutableStateOf(startValue) }
+    var sliderPosition by remember { mutableStateOf(speedRange) }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
