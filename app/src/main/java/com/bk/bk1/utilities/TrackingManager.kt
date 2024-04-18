@@ -7,7 +7,7 @@ import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.events.SensorDataReceivedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
 import com.bk.bk1.models.ComfortIndexRecord
-import com.bk.bk1.models.LinearAcceleration
+import com.bk.bk1.models.Imu
 import com.bk.bk1.models.TrackRecord
 import com.squareup.otto.Produce
 import com.squareup.otto.Subscribe
@@ -34,10 +34,12 @@ class TrackingManager @Inject constructor(
     private var trackingStatus = 0
     private var lastTrackId: Int? = null
     private var lastTimestamp = 0
-    private var oneSecondDataList = mutableListOf<LinearAcceleration>()
+    private var oneSecondDataList = mutableListOf<Imu>()
     private var location: Location? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val bus = BusProvider.getEventBus()
+
+    var sensorOrientationCalculator = SensorOrientationCalculator()
 
     fun startTracking() {
         bus.register(this)
@@ -55,6 +57,9 @@ class TrackingManager @Inject constructor(
             val trackRecord = TrackRecord(name = "Trasa", time = dateString)
             lastTrackId = trackRecordDao.upsertTrackRecord(trackRecord).toInt()
         }
+
+        sensorOrientationCalculator = SensorOrientationCalculator()
+//        bus.register(sensorOrientationCalculator)
 
         bus.post(produceCurrentTrackIdChangedEvent())
         trackingStatus = 1
@@ -80,12 +85,14 @@ class TrackingManager @Inject constructor(
         }
 
         locationClient.removeLocationUpdates()
+//        bus.unregister(sensorOrientationCalculator)
         bus.unregister(this)
     }
 
     @Subscribe
     fun onSensorDataReceived(event: SensorDataReceivedEvent) {
         val sensorData = event.data ?: return
+        sensorOrientationCalculator.onSensorChanged(event.data)
         if (sensorData.Body.Timestamp - lastTimestamp < 1000) {
             oneSecondDataList.add(sensorData)
         }

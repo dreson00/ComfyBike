@@ -49,7 +49,7 @@ class SensorManager @Inject constructor(
         bus.register(sensorNotificationListener)
         mdsSubscription = mds?.subscribe(
             "suunto://MDS/EventListener",
-            "{\"Uri\": \"${deviceInfo.serialNumber}/Meas/Acc/26\"}",
+            "{\"Uri\": \"${deviceInfo.serialNumber}/Meas/IMU9/26\"}",
             sensorNotificationListener
         )
         isSubscribed = true

@@ -19,12 +19,14 @@ import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
 import com.bk.bk1.models.ComfortIndexRecord
+import com.bk.bk1.models.ExperimentalData
 import com.bk.bk1.utilities.BluetoothStateUpdater
 import com.bk.bk1.utilities.BusProvider
 import com.bk.bk1.utilities.LocationClient
 import com.bk.bk1.utilities.LocationStateUpdater
 import com.squareup.otto.Subscribe
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.launchIn
@@ -68,6 +70,10 @@ class MainMapScreenViewModel @Inject constructor(
     }
     private val sharedPreferences = application
         .getSharedPreferences("showLocationPermissionRequest", Context.MODE_PRIVATE)
+
+    private var pitch = 0.0
+    private var roll = 0.0
+    val experimentalData = MutableStateFlow(ExperimentalData())
 
 
     init {
@@ -153,6 +159,8 @@ class MainMapScreenViewModel @Inject constructor(
     @Subscribe
     fun onCurrentTrackIdChangedEvent(event: CurrentTrackIdChangedEvent) {
         if (event.currentTrackId != null) {
+            pitch = 0.0
+            roll = 0.0
             currentComfortIndexRecordsFlow = comfortIndexRecordDao
                 .getRecordFlowListByTrackId(event.currentTrackId)
             firstComfortIndexRecordForAllExceptCurrent = comfortIndexRecordDao
@@ -165,5 +173,37 @@ class MainMapScreenViewModel @Inject constructor(
         }
         currentTrackId.postValue(event.currentTrackId)
     }
+
+//    @Subscribe
+//    fun onSensorDataReceived(event: SensorDataReceivedEvent) {
+//        val sensorData = event.data ?: return
+//        val gyroX = sensorData.Body.arrayGyro.sumOf { it.x } / sensorData.Body.arrayGyro.count()
+//        val gyroY = sensorData.Body.arrayGyro.sumOf { it.y } / sensorData.Body.arrayGyro.count()
+//
+//        val magX = sensorData.Body.arrayMagn.sumOf { it.x } / sensorData.Body.arrayMagn.count()
+//        val magY = sensorData.Body.arrayMagn.sumOf { it.y } / sensorData.Body.arrayMagn.count()
+//        val magZ = sensorData.Body.arrayMagn.sumOf { it.z } / sensorData.Body.arrayMagn.count()
+//
+//        val dt = 1.0 / 13.0
+//        val alpha = 1.0
+//
+//        val pitchGyro = pitch + gyroY * dt
+//        val rollGyro = roll + gyroX * dt
+//
+//        val pitchMag = atan2(magY, magZ) * (180.0 / Math.PI)
+//        val rollMag = atan2(magX, magZ) * (180.0 / Math.PI)
+//
+//        pitch = alpha * pitchGyro + (1 - alpha) * (pitchMag)
+//        roll = alpha * rollGyro + (1 - alpha) * (rollMag)
+//
+//        experimentalData.update { ExperimentalData(roll, pitch) }
+//
+//    }
+//    @Subscribe
+//    fun onExperimentalDataUpdated(event: ExperimentalDataUpdatedEvent) {
+//        experimentalData.update {
+//            event.data
+//        }
+//    }
 
 }

@@ -80,6 +80,7 @@ import com.bk.bk1.ui.theme.DimGreen
 import com.bk.bk1.ui.theme.GreyLightBlue
 import com.bk.bk1.ui.theme.Red400
 import com.bk.bk1.ui.theme.Red700
+import com.bk.bk1.utilities.SensorOrientationCalculator
 import com.bk.bk1.utilities.SensorService
 import com.bk.bk1.utilities.getBluetoothPermissionList
 import com.bk.bk1.utilities.getLocationPermissionList
@@ -140,6 +141,7 @@ fun MainMapScreen(
     val trackingStatus: Int by viewModel.trackingStatus.observeAsState(initial = 0)
     val isCountdownOn: Boolean by viewModel.isCountdownOn.observeAsState(initial = false)
     val countDownProgress: Long by viewModel.countdownProgress.observeAsState(initial = 0L)
+    val experimentalData = SensorOrientationCalculator.fusedOrientationLiveData.observeAsState()
 
     LaunchedEffect(showLocationPermissionRequestPreference) {
         if (showLocationPermissionRequestPreference == "true" && !locationPermissionsState.allPermissionsGranted) {
@@ -488,6 +490,8 @@ fun MainMapScreen(
                             )
                         }
                     }
+                    Text("Pitch: ${experimentalData.value?.pitch}")
+                    Text("Roll: ${experimentalData.value?.roll}")
                 }
                 if (isLocationEnabled) {
                     FloatingActionButton(

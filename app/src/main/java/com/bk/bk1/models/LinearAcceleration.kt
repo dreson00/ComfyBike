@@ -13,11 +13,11 @@ class LinearAcceleration(
 @Serializable
 data class Body(
     val Timestamp: Int,
-    @SerialName("ArrayAcc") val arrayAcc: List<ArrayAcc>
+    @SerialName("ArrayAcc") val arrayAcc: List<AccItem>
 )
 
 @Serializable
-data class ArrayAcc(
+data class AccItem(
     val x: Double,
     val y: Double,
     val z: Double
