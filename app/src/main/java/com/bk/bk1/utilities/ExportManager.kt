@@ -2,6 +2,7 @@ package com.bk.bk1.utilities
 
 import android.graphics.Bitmap
 import android.os.Environment
+import com.bk.bk1.enums.ExportCsvStatus
 import com.bk.bk1.models.ComfortIndexRecord
 import java.io.File
 import java.io.FileOutputStream
@@ -25,7 +26,7 @@ class ExportManager {
         }
     }
 
-    fun saveCiListAsCsv(records: List<ComfortIndexRecord>, fileName: String): Int {
+    fun saveCiListAsCsv(records: List<ComfortIndexRecord>, fileName: String): ExportCsvStatus {
         val folder = getOrCreateFolder()
         val file = createFile(folder, fileName, "csv")
 
@@ -36,9 +37,9 @@ class ExportManager {
                     out.write("${record.comfortIndex},${record.bicycleSpeed},${record.latitude},${record.longitude}\n")
                 }
             }
-            0
+            ExportCsvStatus.SUCCESS
         } catch (e: IOException) {
-            1
+            ExportCsvStatus.FAILURE
         }
     }
 

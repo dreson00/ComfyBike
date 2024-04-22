@@ -17,7 +17,7 @@ interface TrackRecordDao {
     suspend fun deleteTrackRecord(trackRecord: TrackRecord)
 
     @Query("SELECT * FROM trackRecord")
-    fun getTrackRecords(): Flow<List<TrackRecord>>
+    fun getTrackRecords(): List<TrackRecord>
 
     @Query("SELECT * FROM trackrecord WHERE id = :trackId")
     fun getTrackRecordFlowById(trackId: Int) : Flow<TrackRecord?>

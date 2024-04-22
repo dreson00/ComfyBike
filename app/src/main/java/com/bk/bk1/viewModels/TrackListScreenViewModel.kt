@@ -1,18 +1,20 @@
 package com.bk.bk1.viewModels
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.bk.bk1.data.ComfortIndexRecordDao
 import com.bk.bk1.data.TrackRecordDao
+import com.bk.bk1.enums.ExportCsvStatus
 import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.models.TrackRecord
+import com.bk.bk1.states.TrackListScreenState
 import com.bk.bk1.utilities.BusProvider
 import com.bk.bk1.utilities.ExportManager
 import com.squareup.otto.Subscribe
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,13 +24,21 @@ class TrackListScreenViewModel @Inject constructor(
     private val trackRecordDao: TrackRecordDao,
     private val comfortIndexRecordDao: ComfortIndexRecordDao
 ) : ViewModel() {
-    val tracks = trackRecordDao.getTrackRecords().asLiveData()
-    val currentTrackId = MutableLiveData<Int?>(null)
+    val state = MutableStateFlow(TrackListScreenState())
     private val bus = BusProvider.getEventBus()
 
     init {
         bus.register(this)
+        viewModelScope.launch(Dispatchers.IO) {
+            state.update {
+                it.copy(
+                    trackRecords = trackRecordDao.getTrackRecords()
+                )
+            }
+        }
     }
+
+
 
 
     fun deleteTrack(trackRecord: TrackRecord) {
@@ -37,20 +47,46 @@ class TrackListScreenViewModel @Inject constructor(
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        bus.unregister(this)
+    fun setShowExternalStorageRequest(value: Boolean) {
+        state.update {
+            it.copy(
+                showExternalStorageRequest = value
+            )
+        }
     }
 
-    suspend fun saveCiRecordsAsCsv(tracKRecord: TrackRecord): Int {
-        val ciRecordList = comfortIndexRecordDao
-            .getRecordFlowListByTrackId(tracKRecord.id)
-            .first()
-        return exportManager.saveCiListAsCsv(ciRecordList, "track_${tracKRecord.id}")
+    fun resetExportCsvStatus() {
+        state.update {
+            it.copy(
+                exportCsvStatus = ExportCsvStatus.NOT_SAVING
+            )
+        }
+    }
+
+    fun saveCiRecordsAsCsv(tracKRecord: TrackRecord) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val ciRecordList = comfortIndexRecordDao.getRecordListByTrackId(tracKRecord.id)
+            val status = exportManager
+                .saveCiListAsCsv(ciRecordList, "track_${tracKRecord.id}")
+            state.update {
+                it.copy(
+                    exportCsvStatus = status
+                )
+            }
+        }
+    }
+
+    override fun onCleared() {
+        bus.unregister(this)
+        super.onCleared()
     }
 
     @Subscribe
     fun onCurrentTrackIdChanged(event: CurrentTrackIdChangedEvent) {
-        currentTrackId.postValue(event.currentTrackId)
+        state.update {
+            it.copy(
+                currentTrackId = event.currentTrackId
+            )
+        }
     }
 }

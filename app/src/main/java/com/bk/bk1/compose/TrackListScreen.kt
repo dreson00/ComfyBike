@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -39,11 +37,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,13 +55,14 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.bk.bk1.R
+import com.bk.bk1.enums.ExportCsvStatus
+import com.bk.bk1.models.TrackRecord
 import com.bk.bk1.ui.theme.BK1Theme
 import com.bk.bk1.utilities.getExternalStoragePermissionList
 import com.bk.bk1.utilities.parseFromDbFormat
 import com.bk.bk1.viewModels.TrackListScreenViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import kotlinx.coroutines.launch
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
 
@@ -72,24 +70,44 @@ import me.saket.cascade.rememberCascadeState
 @Composable
 fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavController) {
 
-    val tracks by viewModel.tracks.observeAsState(emptyList())
-    val currentTrackId by viewModel.currentTrackId.observeAsState(null)
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-
+    val state by viewModel.state.collectAsState()
     val externalStoragePermissionsState = rememberMultiplePermissionsState(
         permissions = getExternalStoragePermissionList()
     )
-    val showExternalStorageRequest = remember { mutableStateOf(false) }
 
-    if (showExternalStorageRequest.value) {
+    val hasExternalStoragePermissions: () -> Boolean = {
+        externalStoragePermissionsState.allPermissionsGranted
+                || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+    }
+
+    if (state.exportCsvStatus != ExportCsvStatus.NOT_SAVING) {
+        val message = when (state.exportCsvStatus) {
+            ExportCsvStatus.SUCCESS -> {
+                stringResource(R.string.info_csv_exp_succ)
+            }
+            ExportCsvStatus.FAILURE -> {
+                stringResource(R.string.info_exp_err)
+            }
+            else -> { String() }
+        }
+
+        Toast.makeText(
+            LocalContext.current,
+            message,
+            Toast.LENGTH_LONG
+        ).show()
+
+        viewModel.resetExportCsvStatus()
+    }
+
+    if (state.showExternalStorageRequest) {
         PermissionRequestDialog(
             messageText = stringResource(R.string.req_perm_storage),
             onConfirm = {
                 externalStoragePermissionsState.launchMultiplePermissionRequest()
             },
             onDismiss = {
-                showExternalStorageRequest.value = false
+                viewModel.setShowExternalStorageRequest(false)
             }
         )
     }
@@ -116,7 +134,7 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
             Column(
                 modifier = Modifier.padding(padding),
             ) {
-                if (tracks.isEmpty()) {
+                if (state.trackRecords.isEmpty()) {
                     Text(
                         text = stringResource(R.string.info_no_tracks),
                         color = Color.Gray,
@@ -130,156 +148,161 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(10.dp, 0.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(tracks) { track ->
-                            if (track.id != currentTrackId) {
-                                Box(
-                                    modifier = Modifier
-                                        .width(0.dp)
-                                        .height(5.dp)
-                                )
-
-                                val state = rememberCascadeState()
-                                var expanded by remember { mutableStateOf(false) }
-                                ElevatedCard(
-                                    modifier = Modifier
-                                        .clickable { navController.navigate("trackDetailScreen/${track.id}") }
-                                        .height(70.dp)
-                                        .fillMaxWidth(),
-                                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 5.dp),
-                                    colors = CardDefaults.elevatedCardColors(
-                                        containerColor = MaterialTheme.colorScheme.background
-                                    )
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(PaddingValues(12.dp, 10.dp)),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = "${stringResource(R.string.label_track_x)} ${track.id}"
-                                            )
-                                            Text(
-                                                text = parseFromDbFormat(track.time),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = Color.Gray
-                                            )
+                        item() { }
+                        items(state.trackRecords) { track ->
+                            if (track.id != state.currentTrackId) {
+                                TrackListItem(
+                                    track = track,
+                                    onTrackClick = {
+                                        navController.navigate("trackDetailScreen/${track.id}")
+                                    },
+                                    onSaveTrackAsCSV = {
+                                        if (hasExternalStoragePermissions()) {
+                                            viewModel.saveCiRecordsAsCsv(track)
+                                            false
                                         }
-                                        ElevatedButton(
-                                            onClick = {
-                                                expanded = !expanded
-                                            },
-                                            shape = CircleShape,
-                                            modifier = Modifier
-                                                .size(40.dp),
-                                            elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 5.dp),
-                                            contentPadding = PaddingValues(1.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = White)
-
-                                        ) {
-                                            Icon(
-                                                Icons.TwoTone.MoreVert,
-                                                contentDescription = stringResource(R.string.btn_options),
-                                                tint = Color.Black)
-
-                                            CascadeDropdownMenu(
-                                                expanded = expanded,
-                                                onDismissRequest = { expanded = false },
-                                                state = state,
-                                                offset = DpOffset(x = 20.dp, y = (-10).dp)
-                                            ) {
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Text(stringResource(R.string.btn_export))
-                                                    },
-                                                    children = {
-                                                        androidx.compose.material.DropdownMenuItem(
-                                                            content = {
-                                                                Text(stringResource(R.string.btn_csv))
-                                                            },
-                                                            onClick = {
-                                                                if (externalStoragePermissionsState.allPermissionsGranted
-                                                                    || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                                                    scope.launch {
-                                                                        val success = viewModel.saveCiRecordsAsCsv(track)
-                                                                        val message = if (success == 0) {
-                                                                            context.getText(R.string.info_csv_exp_succ)
-                                                                        }
-                                                                        else {
-                                                                            context.getText(R.string.info_exp_err)
-                                                                        }
-                                                                        Toast.makeText(
-                                                                            context,
-                                                                            message,
-                                                                            Toast.LENGTH_LONG
-                                                                        ).show()
-                                                                    }
-                                                                    expanded = !expanded
-                                                                }
-                                                                else {
-                                                                    showExternalStorageRequest.value = true
-                                                                }
-                                                            }
-                                                        )
-                                                        androidx.compose.material.DropdownMenuItem(
-                                                            content = {
-                                                                Text(stringResource(R.string.btn_img))
-                                                            },
-                                                            onClick =  {
-                                                                if (externalStoragePermissionsState.allPermissionsGranted
-                                                                    || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                                                    navController.navigate("mapScreenshotterScreen/${track.id}")
-                                                                }
-                                                                else {
-                                                                    showExternalStorageRequest.value = true
-                                                                }
-                                                            }
-                                                        )
-                                                    }
-                                                )
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Text(stringResource(R.string.btn_delete))
-                                                    },
-                                                    children = {
-                                                        androidx.compose.material.DropdownMenuItem(
-                                                            content = {
-                                                                Text(stringResource(R.string.btn_confirm))
-                                                            },
-                                                            onClick = {
-                                                                viewModel.deleteTrack(track)
-                                                                expanded = !expanded
-                                                            }
-                                                        )
-                                                        androidx.compose.material.DropdownMenuItem(
-                                                            content = {
-                                                                Text(stringResource(R.string.btn_cancel))
-                                                            },
-                                                            onClick = {
-                                                                state.navigateBack()
-                                                            }
-                                                        )
-                                                    }
-                                                )
-                                            }
+                                        else {
+                                            viewModel.setShowExternalStorageRequest(true)
+                                            true
                                         }
+                                    },
+                                    onSaveTrackAsImage = {
+                                        if (hasExternalStoragePermissions()) {
+                                            navController.navigate("mapScreenshotterScreen/${track.id}")
+                                            false
+                                        }
+                                        else {
+                                            viewModel.setShowExternalStorageRequest(true)
+                                            true
+                                        }
+                                    },
+                                    onDeleteTrackRecord = {
+                                        viewModel.deleteTrack(track)
+                                        false
                                     }
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .width(0.dp)
-                                        .height(5.dp)
                                 )
                             }
                         }
+                        item() { }
                     }
                 }
             }
         }
     )
+}
+
+@Composable
+fun TrackListItem(
+    track: TrackRecord,
+    onTrackClick: () -> Unit,
+    onSaveTrackAsCSV: () -> Boolean,
+    onSaveTrackAsImage: () -> Boolean,
+    onDeleteTrackRecord: () -> Boolean,
+) {
+    val cascadeState = rememberCascadeState()
+    var expanded by remember { mutableStateOf(false) }
+    ElevatedCard(
+        modifier = Modifier
+            .clickable { onTrackClick() }
+            .height(70.dp)
+            .fillMaxWidth(),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 5.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.background
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(PaddingValues(12.dp, 10.dp)),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = "${stringResource(R.string.label_track_x)} ${track.id}"
+                )
+                Text(
+                    text = parseFromDbFormat(track.time),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+            }
+            ElevatedButton(
+                onClick = {
+                    expanded = !expanded
+                },
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(40.dp),
+                elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 5.dp),
+                contentPadding = PaddingValues(1.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = White)
+
+            ) {
+                Icon(
+                    Icons.TwoTone.MoreVert,
+                    contentDescription = stringResource(R.string.btn_options),
+                    tint = Color.Black)
+
+                CascadeDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    state = cascadeState,
+                    offset = DpOffset(x = 20.dp, y = (-10).dp)
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(stringResource(R.string.btn_export))
+                        },
+                        children = {
+                            androidx.compose.material.DropdownMenuItem(
+                                content = {
+                                    Text(stringResource(R.string.btn_csv))
+                                },
+                                onClick = {
+                                    expanded = onSaveTrackAsCSV()
+                                }
+                            )
+                            androidx.compose.material.DropdownMenuItem(
+                                content = {
+                                    Text(stringResource(R.string.btn_img))
+                                },
+                                onClick =  {
+                                    expanded = onSaveTrackAsImage()
+                                }
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(stringResource(R.string.btn_delete))
+                        },
+                        children = {
+                            androidx.compose.material.DropdownMenuItem(
+                                content = {
+                                    Text(stringResource(R.string.btn_confirm))
+                                },
+                                onClick = {
+                                    expanded = onDeleteTrackRecord()
+                                }
+                            )
+                            androidx.compose.material.DropdownMenuItem(
+                                content = {
+                                    Text(stringResource(R.string.btn_cancel))
+                                },
+                                onClick = {
+                                    cascadeState.navigateBack()
+                                }
+                            )
+                        }
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Preview

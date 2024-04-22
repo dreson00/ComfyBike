@@ -25,17 +25,6 @@ class TrackDetailScreenViewModel @Inject constructor(
     private var _comfortIndexRecords = emptyList<ComfortIndexRecord>()
     private lateinit var _trackRecord: TrackRecord
 
-//    val trackId = MutableStateFlow(0)
-//    val comfortIndexRecords = MutableStateFlow<List<ComfortIndexRecord>>(emptyList())
-//    val recordTime = MutableStateFlow(String())
-//    val recordCount = MutableStateFlow(0)
-//    val ciMin = MutableStateFlow(0.0)
-//    val ciMax = MutableStateFlow(0.0)
-//    val ciAvg = MutableStateFlow(0.0)
-//    val ciMedian = MutableStateFlow(0.0)
-//    val speedMin = MutableStateFlow(0f)
-//    val speedMax = MutableStateFlow(30f)
-
     fun initTrackData(trackId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             _comfortIndexRecords = comfortIndexRecordDao.getRecordListByTrackId(trackId)
