@@ -5,8 +5,8 @@ package com.bk.bk1.compose
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
-import android.location.Location
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -46,13 +46,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
@@ -75,17 +73,18 @@ import androidx.core.graphics.BlendModeCompat
 import androidx.navigation.NavController
 import com.bk.bk1.R
 import com.bk.bk1.models.ComfortIndexRecord
+import com.bk.bk1.states.MainMapScreenState
 import com.bk.bk1.ui.theme.BK1Theme
 import com.bk.bk1.ui.theme.DimGreen
 import com.bk.bk1.ui.theme.GreyLightBlue
 import com.bk.bk1.ui.theme.Red400
 import com.bk.bk1.ui.theme.Red700
-import com.bk.bk1.utilities.SensorOrientationCalculator
 import com.bk.bk1.utilities.SensorService
 import com.bk.bk1.utilities.getBluetoothPermissionList
 import com.bk.bk1.utilities.getLocationPermissionList
 import com.bk.bk1.viewModels.MainMapScreenViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
@@ -96,7 +95,6 @@ import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.MapsComposeExperimentalApi
 import com.google.maps.android.compose.MarkerInfoWindow
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
@@ -108,48 +106,30 @@ import com.leinardi.android.speeddial.compose.SpeedDialState
 
 @SuppressLint("SetTextI18n")
 @Composable
-@OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class,
-    MapsComposeExperimentalApi::class, ExperimentalPermissionsApi::class,
-    ExperimentalComposeUiApi::class
+@OptIn(ExperimentalPermissionsApi::class
 )
 fun MainMapScreen(
     navController: NavController,
     viewModel: MainMapScreenViewModel,
     startSensorServiceWithAction: (String) -> Unit
 ) {
+    val state by viewModel.state.collectAsState()
     val context = LocalContext.current
-    var speedDialState by rememberSaveable { mutableStateOf(SpeedDialState.Collapsed) }
-    var overlayVisible by rememberSaveable { mutableStateOf(speedDialState.isExpanded()) }
     val cameraPositionState = rememberCameraPositionState()
-    val currentTrackId = viewModel.currentTrackId.observeAsState()
-
     val locationPermissionsState = rememberMultiplePermissionsState(
         permissions = getLocationPermissionList()
     )
-    val showLocationPermissionRequestPreference by viewModel.showLocationPermissionRequest.observeAsState()
-    val showLocationPermissionRequest = remember { mutableStateOf(false) }
-
     val bluetoothScanPermissionsState = rememberMultiplePermissionsState(
         permissions = getBluetoothPermissionList()
     )
-    val showBluetoothScanRequest = remember { mutableStateOf(false) }
 
-    val location: Location? by viewModel.location.observeAsState(null)
-    val connectionStatus: Int by viewModel.connectionStatus.observeAsState(initial = 0)
-    val isBluetoothAdapterOn: Boolean by viewModel.isBluetoothAdapterOn.observeAsState(initial = true)
-    val isLocationEnabled: Boolean by viewModel.isLocationEnabled.observeAsState(initial = false)
-    val trackingStatus: Int by viewModel.trackingStatus.observeAsState(initial = 0)
-    val isCountdownOn: Boolean by viewModel.isCountdownOn.observeAsState(initial = false)
-    val countDownProgress: Long by viewModel.countdownProgress.observeAsState(initial = 0L)
-    val experimentalData = SensorOrientationCalculator.fusedOrientationLiveData.observeAsState()
-
-    LaunchedEffect(showLocationPermissionRequestPreference) {
-        if (showLocationPermissionRequestPreference == "true" && !locationPermissionsState.allPermissionsGranted) {
-            showLocationPermissionRequest.value = true
+    LaunchedEffect(state.showLocationPermissionRequestPreference) {
+        if (state.showLocationPermissionRequestPreference == "true" && !locationPermissionsState.allPermissionsGranted) {
+            viewModel.setShowLocationPermissionRequest(true)
         }
     }
 
-    if (showLocationPermissionRequest.value) {
+    if (state.showLocationPermissionRequest) {
         PermissionRequestDialog(
             messageText = stringResource(R.string.req_perm_loc),
             onConfirm = {
@@ -158,32 +138,32 @@ fun MainMapScreen(
             },
             onDismiss = {
                 viewModel.disableLocationPermissionRequestDialog()
-                showLocationPermissionRequest.value = false
+                viewModel.setShowLocationPermissionRequest(false)
             }
         )
     }
 
-    if (showBluetoothScanRequest.value) {
+    if (state.showBluetoothScanRequest) {
         PermissionRequestDialog(
             messageText = stringResource(R.string.req_perm_scan),
             onConfirm = {
                 bluetoothScanPermissionsState.launchMultiplePermissionRequest()
             },
             onDismiss = {
-                showBluetoothScanRequest.value = false
+                viewModel.setShowBluetoothScanRequest(false)
             }
         )
     }
 
-    if (locationPermissionsState.allPermissionsGranted && isLocationEnabled) {
+    if (locationPermissionsState.allPermissionsGranted && state.isLocationEnabled) {
         viewModel.enableLocationTracking()
     }
 
-    LaunchedEffect(location, isLocationEnabled) {
-        if (viewModel.cameraFollow && location != null && isLocationEnabled) {
+    LaunchedEffect(state.location, state.isLocationEnabled) {
+        if (state.cameraFollow && state.location != null && state.isLocationEnabled) {
             cameraPositionState.animate(
                 CameraUpdateFactory
-                    .newLatLng(LatLng(location!!.latitude, location!!.longitude))
+                    .newLatLng(LatLng(state.location!!.latitude, state.location!!.longitude))
             )
             if (cameraPositionState.position.zoom < 15F) {
                 cameraPositionState.animate(CameraUpdateFactory.zoomTo(17F))
@@ -193,99 +173,14 @@ fun MainMapScreen(
 
     Scaffold(
         floatingActionButton = {
-            SpeedDial(
-                fabClosedContent = { Icon(Icons.Filled.Menu, null) },
-                state = speedDialState,
-                onFabClick = { expanded ->
-                    overlayVisible = !expanded
-                    speedDialState = if (speedDialState == SpeedDialState.Collapsed) {
-                        SpeedDialState.Expanded
-                    } else {
-                        SpeedDialState.Collapsed
-                    }
-                }
-            ) {
-                if (locationPermissionsState.allPermissionsGranted) {
-                    if (connectionStatus == 0) {
-                        item {
-                            FabWithLabel(
-                                onClick = {
-                                    if (bluetoothScanPermissionsState.allPermissionsGranted) {
-                                        if (isBluetoothAdapterOn) {
-                                            navController.navigate("sensorConnectScreen")
-                                        } else {
-                                            Toast.makeText(
-                                                context,
-                                                context.getText(R.string.warn_bt_off),
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-                                    } else {
-                                        showBluetoothScanRequest.value = true
-                                    }
-
-                                },
-                                labelContent = {
-                                    Text(text = stringResource(R.string.btn_sensor_connect))
-                                }
-                            ) {
-                                Icon(Icons.Default.Add, null)
-                            }
-                        }
-                    } else {
-                        item {
-                            FabWithLabel(
-                                fabContainerColor = Red400,
-                                onClick = {
-                                    startSensorServiceWithAction(SensorService.Actions.STOP_ALL.toString())
-                                },
-                                labelContent = {
-                                    Text(
-                                        text = stringResource(R.string.btn_sensor_disconnect),
-                                        color = Red700
-                                    )
-                                },
-                            ) {
-                                Icon(Icons.Default.Close, null)
-                            }
-                        }
-                    }
-                    if (isLocationEnabled && connectionStatus == 2 && trackingStatus == 0) {
-                        item {
-                            FabWithLabel(
-                                onClick = {
-                                    startSensorServiceWithAction(SensorService.Actions.START_TRACKING.toString())
-                                },
-                                labelContent = { Text(text = stringResource(R.string.btn_new_track_start)) },
-                            ) {
-                                Icon(Icons.Default.PlayArrow, null)
-                            }
-                        }
-                    } else if (trackingStatus == 1) {
-                        item {
-                            FabWithLabel(
-                                onClick = {
-                                    startSensorServiceWithAction(SensorService.Actions.STOP_TRACKING.toString())
-                                },
-                                labelContent = { Text(text = stringResource(R.string.btn_new_track_stop)) },
-                            ) {
-                                Icon(
-                                    painterResource(R.drawable.baseline_stop_24),
-                                    null
-                                )
-                            }
-                        }
-                    }
-                }
-                item {
-                    FabWithLabel(
-                        onClick = { navController.navigate("trackList") },
-                        labelContent = { Text(text = stringResource(R.string.btn_track_list)) },
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.List, null)
-                    }
-                }
-            }
+            SpeedDialButtonMenu(
+                state = state,
+                viewModel = viewModel,
+                navController = navController,
+                locationPermissionsState = locationPermissionsState,
+                bluetoothScanPermissionsState = bluetoothScanPermissionsState,
+                startSensorServiceWithAction = startSensorServiceWithAction
+            )
         },
         content = { padding ->
             Box(modifier = Modifier.padding(padding)) {
@@ -301,7 +196,15 @@ fun MainMapScreen(
                     LaunchedEffect(cameraPositionState.isMoving) {
                         if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
                             viewModel.disableCameraFollow()
-                            speedDialState = SpeedDialState.Collapsed
+                            viewModel.setSpeedDialMenuState(SpeedDialState.Collapsed)
+                        }
+                    }
+
+                    if (state.currentTrackId != null) {
+                        if (state.currentComfortIndexRecords.isNotEmpty()) {
+                            state.currentComfortIndexRecords.forEach { record ->
+                                ComfortIndexRecordMapMarker(record)
+                            }
                         }
                     }
 
@@ -311,254 +214,380 @@ fun MainMapScreen(
                     val markerLabel = remember { markerView.findViewById<TextView>(R.id.marker_label) }
                     markerIconView.setColorFilter(Red400.toArgb())
                     markerLabel.setTextColor(Red400.toArgb())
-                    if (currentTrackId.value != null) {
-                        val currentComfortIndexRecords = viewModel.currentComfortIndexRecordsFlow.collectAsState(
-                            initial = emptyList()
-                        )
-                        if (currentComfortIndexRecords.value.isNotEmpty()) {
-                            currentComfortIndexRecords.value.forEach { record ->
-                                ComfortIndexRecordMapMarker(record)
-                            }
-                        }
-                    }
 
-                    val firstComfortIndexRecordForAllTracks = viewModel
-                        .firstComfortIndexRecordForAllExceptCurrent
-                        .collectAsState(
-                            initial = emptyList()
-                    )
-                    if (firstComfortIndexRecordForAllTracks.value.isNotEmpty()) {
-                        firstComfortIndexRecordForAllTracks.value.forEach { record ->
-                            markerIconView.setImageResource(R.drawable.bicycle_pin_48)
-                            markerLabel.text = "${stringResource(R.string.label_track_x)} ${record.trackRecordId}"
-
-                            iconGenerator.setBackground(null)
-                            iconGenerator.setContentView(markerView)
-                            MarkerInfoWindow(
-                                state = rememberMarkerState(
-                                    position = LatLng(record.latitude, record.longitude)
-                                ),
-                                icon = BitmapDescriptorFactory.fromBitmap(iconGenerator.makeIcon()),
-                                onInfoWindowClick = { navController.navigate("trackDetailScreen/${record.trackRecordId }") },
-                                onClick = {
-                                    it.showInfoWindow()
-                                    true
-                                }
-                            ) {
-                                Box {
-                                    Canvas(
-                                        modifier = Modifier
-                                            .width(105.dp)
-                                            .height(50.dp)
-                                            .align(Alignment.Center)
-                                    ) {
-                                        val trianglePath = Path().let {
-                                            it.moveTo(this.size.width * .40f, this.size.height - 2f)
-                                            it.lineTo(this.size.width * .50f, this.size.height + 30f)
-                                            it.lineTo(this.size.width * .60f, this.size.height - 2f)
-                                            it.close()
-                                            it
-                                        }
-                                        drawRoundRect(
-                                            GreyLightBlue,
-                                            size = Size(this.size.width, this.size.height),
-                                            cornerRadius = CornerRadius(60f)
-                                        )
-                                        drawPath(
-                                            path = trianglePath,
-                                            GreyLightBlue,
-                                        )
-                                    }
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(25.dp))
-                                            .padding(15.dp, 10.dp)
-                                            .align(Alignment.Center)
-                                    ) {
-                                        Button(
-                                            onClick = { }
-                                        ) {
-                                            Text(stringResource(R.string.btn_details))
-                                        }
-                                    }
-                                }
-                            }
+                    if (state.firstComfortIndexRecordForAllTracks.isNotEmpty()) {
+                        state.firstComfortIndexRecordForAllTracks.forEach { record ->
+                            TrackMarker(
+                                record = record,
+                                navController = navController,
+                                markerView = markerView,
+                                markerIconView = markerIconView,
+                                markerLabel = markerLabel,
+                                iconGenerator = iconGenerator
+                            )
                         }
                     }
                 }
-                Column(
-                    modifier = Modifier
-                        .padding(10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .height(35.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color.Black)
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        if (!isLocationEnabled) {
-                            Icon(
-                                painterResource(R.drawable.baseline_location_off_24),
-                                contentDescription = stringResource(R.string.warn_loc_off),
-                                tint = Red700
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .width(1.dp)
-                                    .background(color = Color.Gray)
-                            )
-                        }
-                        Text(
-                            text = stringResource(R.string.status_text),
-                            color = Color.White,
-                            fontSize = 15.sp,
-                            textAlign = TextAlign.Center,
-                            style = TextStyle(
-                                platformStyle = PlatformTextStyle(includeFontPadding = false)
-                            )
-                        )
 
-                        val sensorStatusText = when(connectionStatus) {
-                            0 -> stringResource(R.string.status_not_connected)
-                            1 -> stringResource(R.string.status_connecting)
-                            2 -> stringResource(R.string.status_connected)
-                            else -> stringResource(R.string.status_error)
-                        }
-                        Text(
-                            text = sensorStatusText,
-                            color = Color.White,
-                            fontSize = 15.sp,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 10.sp,
-                            style = TextStyle(
-                                platformStyle = PlatformTextStyle(includeFontPadding = false)
-                            )
+                SensorStatusBar(state)
 
-                        )
+                FollowLocationButton(
+                    state = state,
+                    modifier = Modifier.align(Alignment.BottomStart),
+                    viewModel = viewModel,
+                    locationPermissionsState = locationPermissionsState,
+                )
+            }
+        }
+    )
+}
 
-                        if (isCountdownOn) {
-                            val animatedProgress by animateFloatAsState(
-                                targetValue = countDownProgress.toFloat() / 60000,
-                                animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
-                                label = ""
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.CenterVertically)
-                            ) {
-                                CircularProgressIndicator(
-                                    progress = { animatedProgress },
-                                    modifier = Modifier
-                                        .size(15.dp),
-                                    color = Color(0xFFFFA500),
-                                    strokeWidth = 2.dp,
-                                )
-                                Text(
-                                    text = "${countDownProgress / 1000}",
-                                    color = Color.White,
-                                    style = TextStyle(
-                                        platformStyle = PlatformTextStyle(includeFontPadding = false)
-                                    ),
-                                    fontSize = 8.sp,
-                                    modifier = Modifier
-                                        .align(Alignment.Center)
-                                )
-                            }
+@Composable
+fun FollowLocationButton(
+    state: MainMapScreenState,
+    modifier: Modifier,
+    viewModel: MainMapScreenViewModel,
+    locationPermissionsState: MultiplePermissionsState,
+) {
+    val context = LocalContext.current
+    if (state.isLocationEnabled) {
+        FloatingActionButton(
+            modifier = modifier
+                .padding(16.dp),
+            onClick = {
+                viewModel.toggleCameraFollow()
+            }
+        ) {
+            if (state.cameraFollow) {
+                Icon(
+                    painterResource(
+                        R.drawable.baseline_my_location_24
+                    ),
+                    contentDescription = stringResource(R.string.desc_my_loc)
+                )
+            } else {
+                Icon(
+                    painterResource(
+                        R.drawable.baseline_location_searching_24
+                    ),
+                    contentDescription = stringResource(R.string.desc_my_loc)
+                )
+            }
+        }
+    }
+    else {
+        FloatingActionButton(
+            modifier = modifier
+                .padding(16.dp),
+            containerColor = Red700,
+            onClick = {
+                Toast.makeText(
+                    context,
+                    context.getText(R.string.warn_loc_off),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        ) {
+            Icon(
+                painterResource(
+                    R.drawable.baseline_location_off_24
+                ),
+                contentDescription = stringResource(R.string.warn_loc_off),
+            )
+        }
+    }
+    if (!locationPermissionsState.allPermissionsGranted) {
+        FloatingActionButton(
+            containerColor = Red700,
+            modifier = modifier
+                .padding(16.dp),
+            onClick = {
+                viewModel.setShowLocationPermissionRequest(true)
+            }
+        ) {
+            Icon(Icons.Outlined.Warning,
+                contentDescription = stringResource(R.string.desc_perm_required)
+            )
+        }
+    }
+}
 
-                        }
-                        else {
-                            val sensorStatusColor = when(connectionStatus) {
-                                -1 -> Color.Red
-                                0 -> Color.Red
-                                1 -> Color(0xFFFFA500)
-                                2 -> Color.Green
-                                else -> Color.Gray
-                            }
-                            Surface(
-                                color = sensorStatusColor,
-                                shape = CircleShape,
-                                modifier = Modifier
-                                    .size(15.dp)
-                                    .align(Alignment.CenterVertically),
-                                content = { }
-                            )
-                        }
-                    }
-                    Text("Pitch: ${experimentalData.value?.pitch}")
-                    Text("Roll: ${experimentalData.value?.roll}")
-                }
-                if (isLocationEnabled) {
-                    FloatingActionButton(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(16.dp),
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun SpeedDialButtonMenu(
+    state: MainMapScreenState,
+    viewModel: MainMapScreenViewModel,
+    navController: NavController,
+    locationPermissionsState: MultiplePermissionsState,
+    bluetoothScanPermissionsState: MultiplePermissionsState,
+    startSensorServiceWithAction: (String) -> Unit
+) {
+    val context = LocalContext.current
+    SpeedDial(
+        fabClosedContent = { Icon(Icons.Filled.Menu, null) },
+        state = state.speedDialState,
+        onFabClick = { expanded ->
+            viewModel.setSpeedDialOverlayVisible(!expanded)
+            viewModel.toggleSpeedDialMenuState()
+        }
+    ) {
+        if (locationPermissionsState.allPermissionsGranted) {
+            if (state.connectionStatus == 0) {
+                item {
+                    FabWithLabel(
                         onClick = {
-                            viewModel.toggleCameraFollow()
+                            if (bluetoothScanPermissionsState.allPermissionsGranted) {
+                                if (state.isBluetoothAdapterOn) {
+                                    navController.navigate("sensorConnectScreen")
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        context.getText(R.string.warn_bt_off),
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            } else {
+                                viewModel.setShowBluetoothScanRequest(true)
+                            }
+                        },
+                        labelContent = {
+                            Text(text = stringResource(R.string.btn_sensor_connect))
                         }
                     ) {
-                        if (viewModel.cameraFollow) {
-                            Icon(
-                                painterResource(
-                                    R.drawable.baseline_my_location_24
-                                ),
-                                contentDescription = stringResource(R.string.desc_my_loc)
-                            )
-                        } else {
-                            Icon(
-                                painterResource(
-                                    R.drawable.baseline_location_searching_24
-                                ),
-                                contentDescription = stringResource(R.string.desc_my_loc)
-                            )
-                        }
+                        Icon(Icons.Default.Add, null)
                     }
                 }
-                else {
-                    FloatingActionButton(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(16.dp),
-                        containerColor = Red700,
+            } else {
+                item {
+                    FabWithLabel(
+                        fabContainerColor = Red400,
                         onClick = {
-                            Toast.makeText(
-                                context,
-                                context.getText(R.string.warn_loc_off),
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
+                            startSensorServiceWithAction(SensorService.Actions.STOP_ALL.toString())
+                        },
+                        labelContent = {
+                            Text(
+                                text = stringResource(R.string.btn_sensor_disconnect),
+                                color = Red700
+                            )
+                        },
+                    ) {
+                        Icon(Icons.Default.Close, null)
+                    }
+                }
+            }
+            if (state.isLocationEnabled && state.connectionStatus == 2 && state.trackingStatus == 0) {
+                item {
+                    FabWithLabel(
+                        onClick = {
+                            startSensorServiceWithAction(SensorService.Actions.START_TRACKING.toString())
+                        },
+                        labelContent = { Text(text = stringResource(R.string.btn_new_track_start)) },
+                    ) {
+                        Icon(Icons.Default.PlayArrow, null)
+                    }
+                }
+            } else if (state.trackingStatus == 1) {
+                item {
+                    FabWithLabel(
+                        onClick = {
+                            startSensorServiceWithAction(SensorService.Actions.STOP_TRACKING.toString())
+                        },
+                        labelContent = { Text(text = stringResource(R.string.btn_new_track_stop)) },
                     ) {
                         Icon(
-                            painterResource(
-                                R.drawable.baseline_location_off_24
-                            ),
-                            contentDescription = stringResource(R.string.warn_loc_off),
-                        )
-                    }
-                }
-                if (!locationPermissionsState.allPermissionsGranted) {
-                    FloatingActionButton(
-                        containerColor = Red700,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(16.dp),
-                        onClick = {
-                            showLocationPermissionRequest.value = true
-                        }
-                    ) {
-                        Icon(Icons.Outlined.Warning,
-                            contentDescription = stringResource(R.string.desc_perm_required)
+                            painterResource(R.drawable.baseline_stop_24),
+                            null
                         )
                     }
                 }
             }
         }
-    )
+        item {
+            FabWithLabel(
+                onClick = { navController.navigate("trackList") },
+                labelContent = { Text(text = stringResource(R.string.btn_track_list)) },
+            ) {
+                Icon(Icons.AutoMirrored.Filled.List, null)
+            }
+        }
+    }
+}
+
+@SuppressLint("SetTextI18n")
+@Composable
+fun TrackMarker(
+    record: ComfortIndexRecord,
+    navController: NavController,
+    markerView: View,
+    markerIconView: ImageView,
+    markerLabel: TextView,
+    iconGenerator: IconGenerator
+) {
+    markerIconView.setImageResource(R.drawable.bicycle_pin_48)
+    markerLabel.text = "${stringResource(R.string.label_track_x)} ${record.trackRecordId}"
+
+    iconGenerator.setBackground(null)
+    iconGenerator.setContentView(markerView)
+    MarkerInfoWindow(
+        state = rememberMarkerState(
+            position = LatLng(record.latitude, record.longitude)
+        ),
+        icon = BitmapDescriptorFactory.fromBitmap(iconGenerator.makeIcon()),
+        onInfoWindowClick = { navController.navigate("trackDetailScreen/${record.trackRecordId }") },
+        onClick = {
+            it.showInfoWindow()
+            true
+        }
+    ) {
+        Box {
+            Canvas(
+                modifier = Modifier
+                    .width(105.dp)
+                    .height(50.dp)
+                    .align(Alignment.Center)
+            ) {
+                val trianglePath = Path().let {
+                    it.moveTo(this.size.width * .40f, this.size.height - 2f)
+                    it.lineTo(this.size.width * .50f, this.size.height + 30f)
+                    it.lineTo(this.size.width * .60f, this.size.height - 2f)
+                    it.close()
+                    it
+                }
+                drawRoundRect(
+                    GreyLightBlue,
+                    size = Size(this.size.width, this.size.height),
+                    cornerRadius = CornerRadius(60f)
+                )
+                drawPath(
+                    path = trianglePath,
+                    GreyLightBlue,
+                )
+            }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(25.dp))
+                    .padding(15.dp, 10.dp)
+                    .align(Alignment.Center)
+            ) {
+                Button(
+                    onClick = { }
+                ) {
+                    Text(stringResource(R.string.btn_details))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SensorStatusBar(
+    state: MainMapScreenState
+) {
+    Column(
+        modifier = Modifier
+            .padding(10.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .height(35.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color.Black)
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            if (!state.isLocationEnabled) {
+                Icon(
+                    painterResource(R.drawable.baseline_location_off_24),
+                    contentDescription = stringResource(R.string.warn_loc_off),
+                    tint = Red700
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(1.dp)
+                        .background(color = Color.Gray)
+                )
+            }
+            Text(
+                text = stringResource(R.string.status_text),
+                color = Color.White,
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                style = TextStyle(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                )
+            )
+
+            val sensorStatusText = when(state.connectionStatus) {
+                0 -> stringResource(R.string.status_not_connected)
+                1 -> stringResource(R.string.status_connecting)
+                2 -> stringResource(R.string.status_connected)
+                else -> stringResource(R.string.status_error)
+            }
+            Text(
+                text = sensorStatusText,
+                color = Color.White,
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                lineHeight = 10.sp,
+                style = TextStyle(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                )
+
+            )
+
+            if (state.isCountdownOn) {
+                val animatedProgress by animateFloatAsState(
+                    targetValue = state.countdownProgress.toFloat() / 60000,
+                    animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+                    label = ""
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                ) {
+                    CircularProgressIndicator(
+                        progress = { animatedProgress },
+                        modifier = Modifier
+                            .size(15.dp),
+                        color = Color(0xFFFFA500),
+                        strokeWidth = 2.dp,
+                    )
+                    Text(
+                        text = "${state.countdownProgress / 1000}",
+                        color = Color.White,
+                        style = TextStyle(
+                            platformStyle = PlatformTextStyle(includeFontPadding = false)
+                        ),
+                        fontSize = 8.sp,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                    )
+                }
+
+            }
+            else {
+                val sensorStatusColor = when(state.connectionStatus) {
+                    -1 -> Color.Red
+                    0 -> Color.Red
+                    1 -> Color(0xFFFFA500)
+                    2 -> Color.Green
+                    else -> Color.Gray
+                }
+                Surface(
+                    color = sensorStatusColor,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .size(15.dp)
+                        .align(Alignment.CenterVertically),
+                    content = { }
+                )
+            }
+        }
+    }
 }
 
 @Composable
