@@ -29,10 +29,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,27 +55,23 @@ fun SensorConnectScreen(
     sensorServiceStarter: (address: String) -> Unit
 ) {
 
+    val state by viewModel.state.collectAsState()
+
     LaunchedEffect(viewModel) {
         viewModel.startScan()
     }
-
-    val devices by viewModel.devicesLiveData.observeAsState(initial = emptyList())
-    val isBluetoothAdapterOn: Boolean by viewModel.isBluetoothAdapterOn.observeAsState(initial = true)
-    val blockButtonClicks = remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val backgroundServicePermissionState = rememberMultiplePermissionsState(
         permissions = getBackgroundLocationServicePermissionList()
     )
-    val showBackgroundServiceRequest = remember { mutableStateOf(false) }
 
     val postNotificationPermissionState = rememberMultiplePermissionsState(
         permissions = getPostNotificationsPermissionList()
     )
-    val showPostNotificationRequest = remember { mutableStateOf(false) }
 
-    LaunchedEffect(isBluetoothAdapterOn) {
-        if (!isBluetoothAdapterOn) {
+    LaunchedEffect(state.isBluetoothAdapterOn) {
+        if (!state.isBluetoothAdapterOn) {
             viewModel.stopScan()
             Toast.makeText(
                 context,
@@ -88,7 +82,7 @@ fun SensorConnectScreen(
         }
     }
 
-    if (showBackgroundServiceRequest.value) {
+    if (state.showBackgroundServiceRequest) {
         PermissionRequestDialog(
             messageText = stringResource(R.string.req_perm_bg_loc),
             onConfirm = {
@@ -97,19 +91,19 @@ fun SensorConnectScreen(
                 }
             },
             onDismiss = {
-                showBackgroundServiceRequest.value = false
+                viewModel.setShowBackgroundServiceRequest(false)
             }
         )
     }
 
-    if (showPostNotificationRequest.value) {
+    if (state.showPostNotificationRequest) {
         PermissionRequestDialog(
             messageText = stringResource(R.string.req_perm_notif),
             onConfirm = {
                 postNotificationPermissionState.launchMultiplePermissionRequest()
             },
             onDismiss = {
-                showPostNotificationRequest.value = false
+                viewModel.setShowPostNotificationRequest(false)
             }
         )
     }
@@ -149,23 +143,22 @@ fun SensorConnectScreen(
                         .padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    if (isBluetoothAdapterOn) {
-                        items(devices) { device ->
+                    if (state.isBluetoothAdapterOn) {
+                        items(state.deviceList) { device ->
                             Row(
                                 modifier = Modifier
-                                    .clickable(enabled = !blockButtonClicks.value) {
+                                    .clickable(enabled = !state.blockButtonClicks) {
                                         if (postNotificationPermissionState.allPermissionsGranted) {
                                             if (backgroundServicePermissionState.allPermissionsGranted) {
-                                                blockButtonClicks.value = true
+                                                viewModel.setBlockButtonClicks(true)
                                                 sensorServiceStarter(device.address)
                                                 viewModel.stopScan()
                                                 navController.popBackStack()
                                             } else {
-                                                showBackgroundServiceRequest.value = true
+                                                viewModel.setShowBackgroundServiceRequest(true)
                                             }
-                                        }
-                                        else {
-                                            showPostNotificationRequest.value = true
+                                        } else {
+                                            viewModel.setShowPostNotificationRequest(true)
                                         }
                                     }
                                     .height(70.dp)
