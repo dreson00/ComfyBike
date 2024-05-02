@@ -7,6 +7,7 @@ import com.bk.bk1.utilities.DefaultLocationClient
 import com.bk.bk1.utilities.LocationClient
 import com.bk.bk1.utilities.TrackingManager
 import com.google.android.gms.location.LocationServices
+import com.squareup.otto.Bus
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,11 +36,13 @@ class ServiceModule {
     fun provideTrackingManager(
         comfortIndexRecordDao: ComfortIndexRecordDao,
         trackRecordDao: TrackRecordDao,
+        bus: Bus,
         locationClient: LocationClient
     ): TrackingManager {
         return TrackingManager(
             comfortIndexRecordDao,
             trackRecordDao,
+            bus,
             locationClient
         )
     }

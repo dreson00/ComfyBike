@@ -76,10 +76,11 @@ object AppModule {
     @Singleton
     @Provides
     fun provideSensorManager(
+        bus: Bus,
         mds: Mds,
         bluetoothManager: BluetoothManager
     ): SensorManager {
-        return SensorManager(mds, bluetoothManager)
+        return SensorManager(bus, mds, bluetoothManager)
     }
 
     @Singleton
