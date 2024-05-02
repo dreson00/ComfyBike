@@ -654,7 +654,8 @@ fun ComfortIndexRecordMapMarker(
         icon = bitmapDescriptorFromVector(
             LocalContext.current,
             R.drawable.baseline_circle_12,
-            Color.hsl(mapFloatToHue(record.comfortIndex), 1f, 0.5f)),
+            getColorFromCiRecord(record)
+        ),
         onClick = { marker ->
             marker.showInfoWindow()
             true
@@ -714,7 +715,8 @@ fun UnoptimizedComfortIndexRecordMapMarker(
         icon = bitmapDescriptorFromVector(
             LocalContext.current,
             R.drawable.baseline_circle_12,
-            Color.hsl(mapFloatToHue(record.comfortIndex), 1f, 0.5f)),
+            getColorFromCiRecord(record)
+        ),
         onClick = { marker ->
             marker.showInfoWindow()
             true
@@ -765,6 +767,10 @@ fun UnoptimizedComfortIndexRecordMapMarker(
     }
 }
 
+fun getColorFromCiRecord(record: ComfortIndexRecord): Color {
+    val hue = 100 * record.comfortIndex
+    return Color.hsl(hue, 1f, 0.5f)
+}
 
 //https://towardsdev.com/jetpack-compose-custom-google-map-marker-erselan-khan-e6e04178a30b
 fun bitmapDescriptorFromVector(
