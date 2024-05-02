@@ -12,6 +12,7 @@ import com.bk.bk1.enums.TrackingStatus
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.SensorAddressChangedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
+import com.squareup.otto.Bus
 import com.squareup.otto.Produce
 import com.squareup.otto.Subscribe
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,8 +27,9 @@ class SensorService() : Service() {
     lateinit var sensorManager: SensorManager
     @Inject
     lateinit var trackingManager: TrackingManager
+    @Inject
+    lateinit var bus: Bus
 
-    private val bus = BusProvider.getEventBus()
     private var isRegisteredForBus = false
     private var sensorAddress = String()
     private var trackingStatus = TrackingStatus.NOT_TRACKING

@@ -15,10 +15,10 @@ import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
 import com.bk.bk1.states.MainMapScreenState
 import com.bk.bk1.utilities.BluetoothStateUpdater
-import com.bk.bk1.utilities.BusProvider
 import com.bk.bk1.utilities.LocationClient
 import com.bk.bk1.utilities.LocationStateUpdater
 import com.leinardi.android.speeddial.compose.SpeedDialState
+import com.squareup.otto.Bus
 import com.squareup.otto.Subscribe
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,6 +39,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainMapScreenViewModel @Inject constructor(
     private val application: Application,
+    private val bus: Bus,
     private val locationClient: LocationClient,
     private val comfortIndexRecordDao: ComfortIndexRecordDao,
     private val bluetoothStateUpdater: BluetoothStateUpdater,
@@ -96,8 +97,6 @@ class MainMapScreenViewModel @Inject constructor(
     }
     private val sharedPreferences = application
         .getSharedPreferences("showLocationPermissionRequest", Context.MODE_PRIVATE)
-
-    private val bus = BusProvider.getEventBus()
 
     init {
         bus.register(this)

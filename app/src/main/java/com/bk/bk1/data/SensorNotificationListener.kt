@@ -3,14 +3,15 @@ package com.bk.bk1.data
 import android.util.Log
 import com.bk.bk1.events.SensorDataReceivedEvent
 import com.bk.bk1.models.Imu
-import com.bk.bk1.utilities.BusProvider
 import com.movesense.mds.MdsException
 import com.movesense.mds.MdsNotificationListener
+import com.squareup.otto.Bus
 import com.squareup.otto.Produce
 import kotlinx.serialization.json.Json
 
-class SensorNotificationListener: MdsNotificationListener {
-    private val bus = BusProvider.getEventBus()
+class SensorNotificationListener(
+    private val bus: Bus
+): MdsNotificationListener {
     private var data: Imu? = null
 
     override fun onNotification(data: String?) {

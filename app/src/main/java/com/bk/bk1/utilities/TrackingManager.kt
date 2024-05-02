@@ -10,6 +10,7 @@ import com.bk.bk1.events.TrackingStatusChangedEvent
 import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.models.Imu
 import com.bk.bk1.models.TrackRecord
+import com.squareup.otto.Bus
 import com.squareup.otto.Produce
 import com.squareup.otto.Subscribe
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +31,7 @@ import kotlin.math.sqrt
 class TrackingManager @Inject constructor(
     private val comfortIndexRecordDao: ComfortIndexRecordDao,
     private val trackRecordDao: TrackRecordDao,
+    private val bus: Bus,
     private val locationClient: LocationClient
 ) {
     private var trackingStatus = TrackingStatus.NOT_TRACKING
@@ -38,7 +40,6 @@ class TrackingManager @Inject constructor(
     private var oneSecondDataList = mutableListOf<Imu>()
     private var location: Location? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val bus = BusProvider.getEventBus()
 
     var sensorOrientationCalculator = SensorOrientationCalculator()
 

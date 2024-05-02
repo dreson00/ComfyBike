@@ -5,10 +5,12 @@ import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.SerialNumberChangedEvent
 import com.movesense.mds.MdsConnectionListener
 import com.movesense.mds.MdsException
+import com.squareup.otto.Bus
 import com.squareup.otto.Produce
 
-class SensorConnectionListener() : MdsConnectionListener {
-    private val bus = BusProvider.getEventBus()
+class SensorConnectionListener(
+    private val bus: Bus
+) : MdsConnectionListener {
     private var serialNumber: String? = null
     private var connectionStatus = SensorConnectionStatus.DISCONNECTED
 

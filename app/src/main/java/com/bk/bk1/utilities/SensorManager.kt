@@ -11,23 +11,25 @@ import com.bk.bk1.events.TrackingStatusChangedEvent
 import com.bk.bk1.models.BluetoothDeviceInfo
 import com.movesense.mds.Mds
 import com.movesense.mds.MdsSubscription
+import com.squareup.otto.Bus
 import com.squareup.otto.Subscribe
 import javax.inject.Inject
 
 class SensorManager @Inject constructor(
+    private val bus: Bus,
     private var mds: Mds,
     private var bluetoothManager: BluetoothManager
 ) {
     private var mdsSubscription: MdsSubscription? = null
-    private var sensorConnectionListener = SensorConnectionListener()
-    private var sensorNotificationListener = SensorNotificationListener()
+    private var sensorConnectionListener = SensorConnectionListener(bus)
+    private var sensorNotificationListener = SensorNotificationListener(bus)
     private val deviceInfo: BluetoothDeviceInfo =
         BluetoothDeviceInfo(
             null,
             String(),
             SensorConnectionStatus.DISCONNECTED
         )
-    private val bus = BusProvider.getEventBus()
+
     private var isSubscribed = false
     private var isRegisteredForBus = false
 

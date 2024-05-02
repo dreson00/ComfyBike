@@ -13,6 +13,7 @@ import com.bk.bk1.utilities.LocationStateReceiver
 import com.bk.bk1.utilities.LocationStateUpdater
 import com.bk.bk1.utilities.SensorManager
 import com.movesense.mds.Mds
+import com.squareup.otto.Bus
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,6 +46,12 @@ object AppModule {
     fun provideComfortIndexRecordDao(
         trackDatabase: TrackDatabase
     ) = trackDatabase.comfortIndexRecordDao
+
+    @Singleton
+    @Provides
+    fun provideBus(): Bus {
+        return Bus()
+    }
 
     @Singleton
     @Provides
