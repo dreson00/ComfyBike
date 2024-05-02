@@ -1,5 +1,6 @@
 package com.bk.bk1.utilities
 
+import com.bk.bk1.enums.SensorConnectionStatus
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.SerialNumberChangedEvent
 import com.movesense.mds.MdsConnectionListener
@@ -9,27 +10,27 @@ import com.squareup.otto.Produce
 class SensorConnectionListener() : MdsConnectionListener {
     private val bus = BusProvider.getEventBus()
     private var serialNumber: String? = null
-    private var connectionStatus = 0
+    private var connectionStatus = SensorConnectionStatus.DISCONNECTED
 
     override fun onConnect(p0: String?) {
-        connectionStatus = 1
+        connectionStatus = SensorConnectionStatus.CONNECTING
         bus.post(produceConnectionStatusChangedEvent())
     }
 
     override fun onConnectionComplete(p0: String?, serial: String?) {
-        connectionStatus = 2
+        connectionStatus = SensorConnectionStatus.CONNECTED
         bus.post(produceConnectionStatusChangedEvent())
         serialNumber = serial
         bus.post(produceSerialNumberChangedEvent())
     }
 
     override fun onError(p0: MdsException?) {
-        connectionStatus = -1
+        connectionStatus = SensorConnectionStatus.ERROR
         bus.post(produceConnectionStatusChangedEvent())
     }
 
     override fun onDisconnect(p0: String?) {
-        connectionStatus = 0
+        connectionStatus = SensorConnectionStatus.DISCONNECTED
         bus.post(produceConnectionStatusChangedEvent())
         serialNumber = String()
         bus.post(produceSerialNumberChangedEvent())

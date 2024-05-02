@@ -8,6 +8,8 @@ import android.os.CountDownTimer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bk.bk1.data.ComfortIndexRecordDao
+import com.bk.bk1.enums.SensorConnectionStatus
+import com.bk.bk1.enums.TrackingStatus
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
@@ -177,15 +179,15 @@ class MainMapScreenViewModel @Inject constructor(
     fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
         _state.update { it.copy(connectionStatus = event.connectionStatus) }
 
-        if (event.connectionStatus <= 0
-            && _state.value.trackingStatus == 1
+        if (event.connectionStatus <= SensorConnectionStatus.DISCONNECTED
+            && _state.value.trackingStatus == TrackingStatus.TRACKING
             && !_state.value.isCountdownOn) {
             _state.update { it.copy(isCountdownOn = true) }
             _state.update { it.copy(countdownProgress = countDownMaxValue) }
             timer.start()
         }
 
-        else if (event.connectionStatus > 0 && _state.value.isCountdownOn) {
+        else if (event.connectionStatus > SensorConnectionStatus.DISCONNECTED && _state.value.isCountdownOn) {
             _state.update { it.copy(isCountdownOn = false) }
             timer.cancel()
             _state.update { it.copy(countdownProgress = -1L) }

@@ -3,6 +3,7 @@ package com.bk.bk1.utilities
 import android.location.Location
 import com.bk.bk1.data.ComfortIndexRecordDao
 import com.bk.bk1.data.TrackRecordDao
+import com.bk.bk1.enums.TrackingStatus
 import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.events.SensorDataReceivedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
@@ -31,7 +32,7 @@ class TrackingManager @Inject constructor(
     private val trackRecordDao: TrackRecordDao,
     private val locationClient: LocationClient
 ) {
-    private var trackingStatus = 0
+    private var trackingStatus = TrackingStatus.NOT_TRACKING
     private var lastTrackId: Int? = null
     private var lastTimestamp = 0
     private var oneSecondDataList = mutableListOf<Imu>()
@@ -62,18 +63,18 @@ class TrackingManager @Inject constructor(
 //        bus.register(sensorOrientationCalculator)
 
         bus.post(produceCurrentTrackIdChangedEvent())
-        trackingStatus = 1
+        trackingStatus = TrackingStatus.TRACKING
         bus.post(produceTrackingStatusChangedEvent())
     }
 
     fun stopTracking() {
-        if (trackingStatus <= 0) {
+        if (trackingStatus <= TrackingStatus.NOT_TRACKING) {
             return
         }
         val toDeleteCandidateId = lastTrackId
         lastTrackId = null
         bus.post(produceCurrentTrackIdChangedEvent())
-        trackingStatus = 0
+        trackingStatus = TrackingStatus.NOT_TRACKING
         bus.post(produceTrackingStatusChangedEvent())
 
         scope.launch {
@@ -148,3 +149,4 @@ class TrackingManager @Inject constructor(
         return CurrentTrackIdChangedEvent(lastTrackId)
     }
 }
+

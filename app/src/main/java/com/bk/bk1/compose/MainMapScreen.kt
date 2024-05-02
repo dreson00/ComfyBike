@@ -72,6 +72,8 @@ import androidx.core.graphics.BlendModeColorFilterCompat
 import androidx.core.graphics.BlendModeCompat
 import androidx.navigation.NavController
 import com.bk.bk1.R
+import com.bk.bk1.enums.SensorConnectionStatus
+import com.bk.bk1.enums.TrackingStatus
 import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.states.MainMapScreenState
 import com.bk.bk1.ui.theme.BK1Theme
@@ -332,7 +334,7 @@ fun SpeedDialButtonMenu(
         }
     ) {
         if (locationPermissionsState.allPermissionsGranted) {
-            if (state.connectionStatus == 0) {
+            if (state.connectionStatus == SensorConnectionStatus.DISCONNECTED) {
                 item {
                     FabWithLabel(
                         onClick = {
@@ -375,7 +377,10 @@ fun SpeedDialButtonMenu(
                     }
                 }
             }
-            if (state.isLocationEnabled && state.connectionStatus == 2 && state.trackingStatus == 0) {
+            if (state.isLocationEnabled
+                && state.connectionStatus == SensorConnectionStatus.CONNECTED
+                && state.trackingStatus == TrackingStatus.NOT_TRACKING
+                ) {
                 item {
                     FabWithLabel(
                         onClick = {
@@ -386,7 +391,7 @@ fun SpeedDialButtonMenu(
                         Icon(Icons.Default.PlayArrow, null)
                     }
                 }
-            } else if (state.trackingStatus == 1) {
+            } else if (state.trackingStatus == TrackingStatus.TRACKING) {
                 item {
                     FabWithLabel(
                         onClick = {
@@ -522,9 +527,9 @@ fun SensorStatusBar(
             )
 
             val sensorStatusText = when(state.connectionStatus) {
-                0 -> stringResource(R.string.status_not_connected)
-                1 -> stringResource(R.string.status_connecting)
-                2 -> stringResource(R.string.status_connected)
+                SensorConnectionStatus.DISCONNECTED -> stringResource(R.string.status_not_connected)
+                SensorConnectionStatus.CONNECTING -> stringResource(R.string.status_connecting)
+                SensorConnectionStatus.CONNECTED -> stringResource(R.string.status_connected)
                 else -> stringResource(R.string.status_error)
             }
             Text(
@@ -571,11 +576,10 @@ fun SensorStatusBar(
             }
             else {
                 val sensorStatusColor = when(state.connectionStatus) {
-                    -1 -> Color.Red
-                    0 -> Color.Red
-                    1 -> Color(0xFFFFA500)
-                    2 -> Color.Green
-                    else -> Color.Gray
+                    SensorConnectionStatus.ERROR -> Color.Red
+                    SensorConnectionStatus.DISCONNECTED -> Color.Red
+                    SensorConnectionStatus.CONNECTING -> Color(0xFFFFA500)
+                    SensorConnectionStatus.CONNECTED -> Color.Green
                 }
                 Surface(
                     color = sensorStatusColor,

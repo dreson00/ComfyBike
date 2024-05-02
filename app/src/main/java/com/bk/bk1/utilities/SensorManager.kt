@@ -2,6 +2,8 @@ package com.bk.bk1.utilities
 
 import android.bluetooth.BluetoothManager
 import com.bk.bk1.data.SensorNotificationListener
+import com.bk.bk1.enums.SensorConnectionStatus
+import com.bk.bk1.enums.TrackingStatus
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.SensorAddressChangedEvent
 import com.bk.bk1.events.SerialNumberChangedEvent
@@ -19,7 +21,12 @@ class SensorManager @Inject constructor(
     private var mdsSubscription: MdsSubscription? = null
     private var sensorConnectionListener = SensorConnectionListener()
     private var sensorNotificationListener = SensorNotificationListener()
-    private val deviceInfo: BluetoothDeviceInfo = BluetoothDeviceInfo(null, String(), 0)
+    private val deviceInfo: BluetoothDeviceInfo =
+        BluetoothDeviceInfo(
+            null,
+            String(),
+            SensorConnectionStatus.DISCONNECTED
+        )
     private val bus = BusProvider.getEventBus()
     private var isSubscribed = false
     private var isRegisteredForBus = false
@@ -82,7 +89,7 @@ class SensorManager @Inject constructor(
 
     @Subscribe
     fun onTrackingStatusChanged(event: TrackingStatusChangedEvent) {
-        if (event.trackingStatus == 1) {
+        if (event.trackingStatus == TrackingStatus.TRACKING) {
             subscribe()
         }
         else {

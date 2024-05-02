@@ -42,8 +42,11 @@ class TrackListScreenViewModel @Inject constructor(
 
 
     fun deleteTrack(trackRecord: TrackRecord) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             trackRecordDao.deleteTrackRecord(trackRecord)
+            state.update {
+                it.copy(trackRecords = trackRecordDao.getTrackRecords())
+            }
         }
     }
 

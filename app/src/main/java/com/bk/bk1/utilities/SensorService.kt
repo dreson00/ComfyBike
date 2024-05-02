@@ -7,6 +7,8 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.bk.bk1.R
 import com.bk.bk1.data.TrackDatabase
+import com.bk.bk1.enums.SensorConnectionStatus
+import com.bk.bk1.enums.TrackingStatus
 import com.bk.bk1.events.ConnectionStatusChangedEvent
 import com.bk.bk1.events.SensorAddressChangedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
@@ -28,7 +30,7 @@ class SensorService() : Service() {
     private val bus = BusProvider.getEventBus()
     private var isRegisteredForBus = false
     private var sensorAddress = String()
-    private var trackingStatus = 0
+    private var trackingStatus = TrackingStatus.NOT_TRACKING
 
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -83,7 +85,9 @@ class SensorService() : Service() {
 
     @Subscribe
     fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
-        if (event.connectionStatus <= 0 && trackingStatus == 1) {
+        if (event.connectionStatus <= SensorConnectionStatus.DISCONNECTED
+            && trackingStatus == TrackingStatus.TRACKING
+            ) {
             stopTracking()
         }
     }
