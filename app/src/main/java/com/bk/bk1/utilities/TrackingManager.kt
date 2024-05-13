@@ -129,7 +129,7 @@ class TrackingManager @Inject constructor(
                     comfortIndexRecordDao.upsertRecord(
                         ComfortIndexRecord(
                             comfortIndex = comfortIndex,
-                            bicycleSpeed = currentLocation.speed,
+                            bicycleSpeed = currentLocation.speed * 3.6f,
                             trackRecordId = lastTrackId!!,
                             latitude = currentLocation.latitude,
                             longitude = currentLocation.longitude
