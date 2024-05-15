@@ -302,7 +302,7 @@ fun FollowLocationButton(
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
+@OptIn(ExperimentalAnimationApi::class, ExperimentalPermissionsApi::class)
 @Composable
 fun SpeedDialButtonMenu(
     state: MainMapScreenState,
