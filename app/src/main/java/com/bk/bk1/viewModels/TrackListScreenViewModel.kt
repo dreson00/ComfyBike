@@ -32,7 +32,7 @@ class TrackListScreenViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             state.update {
                 it.copy(
-                    trackRecords = trackRecordDao.getTrackRecords()
+                    trackRecords = trackRecordDao.getTrackRecordList()
                 )
             }
         }
@@ -45,7 +45,7 @@ class TrackListScreenViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             trackRecordDao.deleteTrackRecord(trackRecord)
             state.update {
-                it.copy(trackRecords = trackRecordDao.getTrackRecords())
+                it.copy(trackRecords = trackRecordDao.getTrackRecordList())
             }
         }
     }
