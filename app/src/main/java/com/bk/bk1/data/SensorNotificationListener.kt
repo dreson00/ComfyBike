@@ -31,6 +31,4 @@ class SensorNotificationListener(
     fun produceSensorDataReceivedEvent(): SensorDataReceivedEvent {
         return SensorDataReceivedEvent(data)
     }
-
-
 }

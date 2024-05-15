@@ -25,6 +25,7 @@ import com.patrykandpatrick.vico.core.extension.copyColor
 import com.patrykandpatrick.vico.core.marker.Marker
 
 // https://github.com/patrykandpatrick/vico/blob/v2.0.0-alpha.12/sample/src/main/java/com/patrykandpatrick/vico/sample/showcase/Marker.kt#L41
+// Chart marker for displaying values.
 @Composable
 internal fun rememberMarker(labelPosition: MarkerComponent.LabelPosition = MarkerComponent.LabelPosition.Top): Marker {
     val labelBackgroundShape = Shapes.markerCorneredShape(Corner.FullyRounded)
