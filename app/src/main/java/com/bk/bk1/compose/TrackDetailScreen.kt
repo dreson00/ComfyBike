@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -120,19 +121,20 @@ fun TrackDetailScreen(
         }
     }
 
-
-
     val state by viewModel.state.collectAsState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
     val cameraPositionState = rememberCameraPositionState()
+    val bottomSheetMove = remember { mutableStateOf(BottomSheetMoves.MovingDown) }
+    val bottomSheetValue = remember { mutableStateOf(SheetValue.PartiallyExpanded) }
     val bottomSheetScaffoldState = rememberBottomSheetScaffoldState(
         SheetState(
             skipPartiallyExpanded = false,
+            initialValue = bottomSheetValue.value,
             density = LocalDensity.current
         )
     )
-    val bottomSheetMove = remember { mutableStateOf(BottomSheetMoves.MovingDown) }
     val orientation = LocalConfiguration.current.orientation
     val comfortIndexRecords = state.comfortIndexRecords
 
@@ -175,9 +177,16 @@ fun TrackDetailScreen(
                 modifier = Modifier
                     .padding(PaddingValues(15.dp, 0.dp))
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scrollState),
                 verticalArrangement = Arrangement.spacedBy(15.dp)
             ) {
+
+                // Scroll to slider if map is visible
+                LaunchedEffect(bottomSheetMove.value) {
+                    if (bottomSheetMove.value == BottomSheetMoves.MovingUp) {
+                        scrollState.animateScrollTo(0, spring())
+                    }
+                }
 
                 // Box to add padding without affecting card elevation shadows
                 Box(
@@ -265,6 +274,11 @@ fun TrackDetailScreen(
                 modifier = Modifier
                     .background(Color.Transparent)
                     .fillMaxWidth()
+                    .heightIn(
+                        max =
+                        if (state.dataLoaded && state.speedMin != state.speedMax)
+                            635.dp else Dp.Unspecified
+                    )
                     .padding(0.dp, 10.dp, 0.dp, 0.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(spacing)
@@ -295,6 +309,7 @@ fun TrackDetailScreen(
                             scope.launch {
                                 toggleBottomSheet(
                                     bottomSheetScaffoldState.bottomSheetState,
+                                    bottomSheetValue,
                                     bottomSheetMove
                                 )
                             }
@@ -331,8 +346,10 @@ fun TrackDetailScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp, 24.dp, 0.dp, 0.dp))
                 ) {
-                    comfortIndexRecords.forEach { record ->
-                        UnoptimizedComfortIndexRecordMapMarker(record)
+                    if (bottomSheetScaffoldState.bottomSheetState.currentValue == SheetValue.Expanded && bottomSheetMove.value != BottomSheetMoves.MovingDown) {
+                        comfortIndexRecords.forEach { record ->
+                            UnoptimizedComfortIndexRecordMapMarker(record)
+                        }
                     }
                 }
             }
@@ -390,15 +407,18 @@ enum class BottomSheetMoves {
 @OptIn(ExperimentalMaterial3Api::class)
 suspend fun toggleBottomSheet(
     sheetState: SheetState,
-    move: MutableState<BottomSheetMoves>
+    sheetValue: MutableState<SheetValue>,
+    move: MutableState<BottomSheetMoves>,
 ) {
     if (sheetState.currentValue == SheetValue.Expanded) {
         move.value = BottomSheetMoves.MovingDown
         sheetState.partialExpand()
+        sheetValue.value = SheetValue.PartiallyExpanded
     }
     else if (sheetState.currentValue == SheetValue.Hidden || sheetState.currentValue == SheetValue.PartiallyExpanded) {
         move.value = BottomSheetMoves.MovingUp
         sheetState.expand()
+        sheetValue.value = SheetValue.Expanded
     }
 }
 
@@ -702,10 +722,10 @@ fun TrackDetailScreenPreview() {
                             ),
                             onClick = {
                                 scope.launch {
-                                    toggleBottomSheet(
-                                        bottomSheetScaffoldState.bottomSheetState,
-                                        bottomSheetMove
-                                    )
+//                                    toggleBottomSheet(
+//                                        bottomSheetScaffoldState.bottomSheetState,
+//                                        bottomSheetMove
+//                                    )
                                 }
                             }
                         ) {

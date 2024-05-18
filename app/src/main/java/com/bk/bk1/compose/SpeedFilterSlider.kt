@@ -19,7 +19,7 @@ import com.bk.bk1.R
 @Composable
 fun SpeedFilterSlider(
     speedRange: ClosedFloatingPointRange<Float>,
-    onValuesChanged: (ClosedFloatingPointRange<Float>) -> Unit
+    onValuesChanged: (ClosedFloatingPointRange<Float>) -> Unit,
 ) {
     var sliderPosition by remember { mutableStateOf(speedRange) }
     Column(
