@@ -5,7 +5,6 @@ import com.bk.bk1.enums.TrackingStatus
 import com.bk.bk1.events.SensorAddressChangedEvent
 import com.bk.bk1.events.SerialNumberChangedEvent
 import com.bk.bk1.events.TrackingStatusChangedEvent
-import com.bk.bk1.models.BluetoothDeviceInfo
 import com.movesense.mds.Mds
 import com.movesense.mds.MdsSubscription
 import com.squareup.otto.Bus
@@ -20,11 +19,8 @@ class SensorManager @Inject constructor(
     private var mdsSubscription: MdsSubscription? = null
     private var sensorConnectionListener = SensorConnectionListener(bus)
     private var sensorNotificationListener = SensorNotificationListener(bus)
-    private val deviceInfo: BluetoothDeviceInfo =
-        BluetoothDeviceInfo(
-            null,
-            String()
-        )
+    private var deviceAddress: String? = null
+    private var deviceSerialNumber = String()
 
     private var isSubscribed = false
     private var isRegisteredForBus = false
@@ -42,7 +38,7 @@ class SensorManager @Inject constructor(
 
     fun disconnectSensor() {
         unsubscribe()
-        deviceInfo.address?.let {
+        deviceAddress?.let {
             mds.disconnect(it)
         }
         bus.unregister(this)
@@ -54,7 +50,7 @@ class SensorManager @Inject constructor(
         bus.register(sensorNotificationListener)
         mdsSubscription = mds?.subscribe(
             "suunto://MDS/EventListener",
-            "{\"Uri\": \"${deviceInfo.serialNumber}/Meas/IMU9/26\"}",
+            "{\"Uri\": \"${deviceSerialNumber}/Meas/IMU9/26\"}",
             sensorNotificationListener
         )
         isSubscribed = true
@@ -70,13 +66,13 @@ class SensorManager @Inject constructor(
 
     @Subscribe
     fun onSensorAddressChanged(event: SensorAddressChangedEvent) {
-        deviceInfo.address = event.sensorAddress
+        deviceAddress = event.sensorAddress
     }
 
     @Subscribe
     fun onSerialNumberChanged(event: SerialNumberChangedEvent) {
         event.serialNumber?.let {
-            deviceInfo.serialNumber = event.serialNumber
+            deviceSerialNumber = event.serialNumber
         }
     }
 
