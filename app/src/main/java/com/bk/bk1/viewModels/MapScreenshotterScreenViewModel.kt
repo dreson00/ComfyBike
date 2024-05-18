@@ -3,7 +3,7 @@ package com.bk.bk1.viewModels
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bk.bk1.data.ComfortIndexRecordDao
+import com.bk.bk1.data.ComfortIndexRecordRepository
 import com.bk.bk1.enums.ImageSavingStatus
 import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.states.MapScreenshotterScreenState
@@ -18,7 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MapScreenshotterScreenViewModel @Inject constructor(
     private val exportManager: ExportManager,
-    val comfortIndexRecordDao: ComfortIndexRecordDao
+    private val comfortIndexRecordRepository: ComfortIndexRecordRepository
 ) : ViewModel() {
     val state = MutableStateFlow(MapScreenshotterScreenState())
     private var _comfortIndexRecords = emptyList<ComfortIndexRecord>()
@@ -45,7 +45,7 @@ class MapScreenshotterScreenViewModel @Inject constructor(
 
     fun initTrackData(trackId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            _comfortIndexRecords = comfortIndexRecordDao.getRecordListByTrackId(trackId)
+            _comfortIndexRecords = comfortIndexRecordRepository.getRecordListByTrackId(trackId)
             val speedMin = _comfortIndexRecords.minBy { it.bicycleSpeed }.bicycleSpeed
             val speedMax = _comfortIndexRecords.maxBy { it.bicycleSpeed }.bicycleSpeed
             state.update {

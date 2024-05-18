@@ -2,8 +2,8 @@ package com.bk.bk1.viewModels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bk.bk1.data.ComfortIndexRecordDao
-import com.bk.bk1.data.TrackRecordDao
+import com.bk.bk1.data.ComfortIndexRecordRepository
+import com.bk.bk1.data.TrackRecordRepository
 import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.models.TrackRecord
 import com.bk.bk1.states.TrackDetailScreenState
@@ -17,8 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TrackDetailScreenViewModel @Inject constructor(
-    private val trackRecordDao: TrackRecordDao,
-    private val comfortIndexRecordDao: ComfortIndexRecordDao
+    private val trackRecordRepository: TrackRecordRepository,
+    private val comfortIndexRecordRepository: ComfortIndexRecordRepository
 ) : ViewModel() {
 
     val state = MutableStateFlow(TrackDetailScreenState())
@@ -27,12 +27,12 @@ class TrackDetailScreenViewModel @Inject constructor(
 
     fun initTrackData(trackId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            _comfortIndexRecords = comfortIndexRecordDao.getRecordListByTrackId(trackId)
+            _comfortIndexRecords = comfortIndexRecordRepository.getRecordListByTrackId(trackId)
             val speedMin = _comfortIndexRecords.minBy { it.bicycleSpeed }.bicycleSpeed
             val speedMax = _comfortIndexRecords.maxBy { it.bicycleSpeed }.bicycleSpeed
             filterRecordsBySpeedRange(speedMin..speedMax)
 
-            trackRecordDao.getTrackRecordById(trackId)?.let { trackRecord ->
+            trackRecordRepository.getTrackRecordById(trackId)?.let { trackRecord ->
                 _trackRecord = trackRecord
                 state.update {
                     it.copy(

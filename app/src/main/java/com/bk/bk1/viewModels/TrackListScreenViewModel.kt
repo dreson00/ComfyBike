@@ -2,8 +2,8 @@ package com.bk.bk1.viewModels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bk.bk1.data.ComfortIndexRecordDao
-import com.bk.bk1.data.TrackRecordDao
+import com.bk.bk1.data.ComfortIndexRecordRepository
+import com.bk.bk1.data.TrackRecordRepository
 import com.bk.bk1.enums.ExportCsvStatus
 import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.models.TrackRecord
@@ -22,8 +22,8 @@ import javax.inject.Inject
 class TrackListScreenViewModel @Inject constructor(
     private val bus: Bus,
     private val exportManager: ExportManager,
-    private val trackRecordDao: TrackRecordDao,
-    private val comfortIndexRecordDao: ComfortIndexRecordDao
+    private val trackRecordRepository: TrackRecordRepository,
+    private val comfortIndexRecordRepository: ComfortIndexRecordRepository
 ) : ViewModel() {
     val state = MutableStateFlow(TrackListScreenState())
 
@@ -32,7 +32,7 @@ class TrackListScreenViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             state.update {
                 it.copy(
-                    trackRecords = trackRecordDao.getTrackRecordList()
+                    trackRecords = trackRecordRepository.getTrackRecordList()
                 )
             }
         }
@@ -43,9 +43,9 @@ class TrackListScreenViewModel @Inject constructor(
 
     fun deleteTrack(trackRecord: TrackRecord) {
         viewModelScope.launch(Dispatchers.IO) {
-            trackRecordDao.deleteTrackRecord(trackRecord)
+            trackRecordRepository.deleteTrackRecord(trackRecord)
             state.update {
-                it.copy(trackRecords = trackRecordDao.getTrackRecordList())
+                it.copy(trackRecords = trackRecordRepository.getTrackRecordList())
             }
         }
     }
@@ -68,7 +68,7 @@ class TrackListScreenViewModel @Inject constructor(
 
     fun saveCiRecordsAsCsv(tracKRecord: TrackRecord) {
         viewModelScope.launch(Dispatchers.IO) {
-            val ciRecordList = comfortIndexRecordDao.getRecordListByTrackId(tracKRecord.id)
+            val ciRecordList = comfortIndexRecordRepository.getRecordListByTrackId(tracKRecord.id)
             val status = exportManager
                 .saveCiListAsCsv(ciRecordList, "track_${tracKRecord.id}")
             state.update {

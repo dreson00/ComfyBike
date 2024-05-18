@@ -1,8 +1,8 @@
 package com.bk.bk1.utilities
 
 import android.location.Location
-import com.bk.bk1.data.ComfortIndexRecordDao
-import com.bk.bk1.data.TrackRecordDao
+import com.bk.bk1.data.ComfortIndexRecordRepository
+import com.bk.bk1.data.TrackRecordRepository
 import com.bk.bk1.enums.TrackingStatus
 import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.events.SensorDataReceivedEvent
@@ -29,8 +29,8 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 class TrackingManager @Inject constructor(
-    private val comfortIndexRecordDao: ComfortIndexRecordDao,
-    private val trackRecordDao: TrackRecordDao,
+    private val comfortIndexRecordRepository: ComfortIndexRecordRepository,
+    private val trackRecordRepository: TrackRecordRepository,
     private val bus: Bus,
     private val locationClient: LocationClient
 ) {
@@ -57,7 +57,7 @@ class TrackingManager @Inject constructor(
             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             val dateString = formatter.format(Date())
             val trackRecord = TrackRecord(name = "Trasa", time = dateString)
-            lastTrackId = trackRecordDao.upsertTrackRecord(trackRecord).toInt()
+            lastTrackId = trackRecordRepository.upsertTrackRecord(trackRecord).toInt()
         }
 
         sensorOrientationCalculator = SensorOrientationCalculator()
@@ -80,8 +80,8 @@ class TrackingManager @Inject constructor(
 
         scope.launch {
             toDeleteCandidateId?.let {
-                if (comfortIndexRecordDao.getComfortIndexRecordCount(it) == 0) {
-                    trackRecordDao.deleteTrackRecord(it)
+                if (comfortIndexRecordRepository.getComfortIndexRecordCount(it) == 0) {
+                    trackRecordRepository.deleteTrackRecord(it)
                 }
             }
         }
@@ -126,7 +126,7 @@ class TrackingManager @Inject constructor(
             scope.launch {
                 val currentLocation = location
                 if (currentLocation != null && lastTrackId != null && currentLocation.hasSpeed()) {
-                    comfortIndexRecordDao.upsertRecord(
+                    comfortIndexRecordRepository.upsertRecord(
                         ComfortIndexRecord(
                             comfortIndex = comfortIndex,
                             bicycleSpeed = currentLocation.speed * 3.6f,

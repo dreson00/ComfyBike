@@ -7,7 +7,7 @@ import android.content.Context
 import android.os.CountDownTimer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bk.bk1.data.ComfortIndexRecordDao
+import com.bk.bk1.data.ComfortIndexRecordRepository
 import com.bk.bk1.enums.SensorConnectionStatus
 import com.bk.bk1.enums.TrackingStatus
 import com.bk.bk1.events.ConnectionStatusChangedEvent
@@ -41,7 +41,7 @@ class MainMapScreenViewModel @Inject constructor(
     private val application: Application,
     private val bus: Bus,
     private val locationClient: LocationClient,
-    private val comfortIndexRecordDao: ComfortIndexRecordDao,
+    private val comfortIndexRecordRepository: ComfortIndexRecordRepository,
     private val bluetoothStateUpdater: BluetoothStateUpdater,
     private val locationStateUpdater: LocationStateUpdater
 ) : ViewModel() {
@@ -49,15 +49,15 @@ class MainMapScreenViewModel @Inject constructor(
     private val _state = MutableStateFlow(MainMapScreenState())
     private val _firstComfortIndexRecordForAllExceptCurrentFlow = _state.flatMapLatest {
         when(it.currentTrackId) {
-            null -> comfortIndexRecordDao.getFirstComfortIndexRecordForAll()
-            else -> comfortIndexRecordDao.getFirstComfortIndexRecordForAllExceptCurrent(it.currentTrackId)
+            null -> comfortIndexRecordRepository.getFirstComfortIndexRecordForAll()
+            else -> comfortIndexRecordRepository.getFirstComfortIndexRecordForAllExceptCurrent(it.currentTrackId)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 
     private val _currentComfortIndexRecordsFlow = _state.flatMapLatest {
         when(it.currentTrackId) {
             null -> emptyFlow()
-            else -> comfortIndexRecordDao.getRecordFlowListByTrackId(it.currentTrackId)
+            else -> comfortIndexRecordRepository.getRecordFlowListByTrackId(it.currentTrackId)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 

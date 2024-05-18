@@ -20,10 +20,10 @@ interface TrackRecordDao {
     fun getTrackRecordList(): List<TrackRecord>
 
     @Query("SELECT * FROM trackrecord WHERE id = :trackId")
-    fun getTrackRecordFlowById(trackId: Int) : Flow<TrackRecord?>
+    fun getTrackRecordFlowById(trackId: Int): Flow<TrackRecord?>
 
     @Query("SELECT * FROM trackrecord WHERE id = :trackId")
-    suspend fun getTrackRecordById(trackId: Int) : TrackRecord?
+    suspend fun getTrackRecordById(trackId: Int): TrackRecord?
 
     @Query("DELETE FROM TrackRecord WHERE id = :trackId")
     suspend fun deleteTrackRecord(trackId: Int)

@@ -4,7 +4,9 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.location.LocationManager
 import androidx.room.Room
+import com.bk.bk1.data.ComfortIndexRecordRepository
 import com.bk.bk1.data.TrackDatabase
+import com.bk.bk1.data.TrackRecordRepository
 import com.bk.bk1.utilities.BluetoothScanManager
 import com.bk.bk1.utilities.BluetoothStateReceiver
 import com.bk.bk1.utilities.BluetoothStateUpdater
@@ -37,15 +39,19 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideTrackRecordDao(
+    fun provideTrackRecordRepository(
         trackDatabase: TrackDatabase
-    ) = trackDatabase.trackRecordDao
+    ): TrackRecordRepository {
+        return TrackRecordRepository(trackDatabase)
+    }
 
     @Singleton
     @Provides
-    fun provideComfortIndexRecordDao(
+    fun provideComfortIndexRecordRepository(
         trackDatabase: TrackDatabase
-    ) = trackDatabase.comfortIndexRecordDao
+    ): ComfortIndexRecordRepository {
+        return ComfortIndexRecordRepository(trackDatabase)
+    }
 
     @Singleton
     @Provides
