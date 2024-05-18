@@ -1,6 +1,5 @@
 package com.bk.bk1.utilities
 
-import android.bluetooth.BluetoothManager
 import com.bk.bk1.enums.TrackingStatus
 import com.bk.bk1.events.SensorAddressChangedEvent
 import com.bk.bk1.events.SerialNumberChangedEvent
@@ -14,7 +13,6 @@ import javax.inject.Inject
 class SensorManager @Inject constructor(
     private val bus: Bus,
     private var mds: Mds,
-    private var bluetoothManager: BluetoothManager
 ) {
     private var mdsSubscription: MdsSubscription? = null
     private var sensorConnectionListener = SensorConnectionListener(bus)
