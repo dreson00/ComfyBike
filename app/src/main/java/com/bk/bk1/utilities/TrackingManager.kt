@@ -101,13 +101,13 @@ class TrackingManager @Inject constructor(
         else {
             lastTimestamp = sensorData.Body.Timestamp
             if (oneSecondDataList.isNotEmpty()) {
-                saveSensorData()
+                processAndSaveSensorData()
                 oneSecondDataList = mutableListOf()
             }
         }
     }
 
-    private fun saveSensorData() {
+    private fun processAndSaveSensorData() {
         var accelerationPowSum = 0.0
         var filteredAccYCount = 0
         val g = 9.8

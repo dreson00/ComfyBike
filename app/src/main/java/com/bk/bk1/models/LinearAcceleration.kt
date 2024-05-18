@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-class LinearAcceleration(
+data class LinearAcceleration(
     val Body: Body,
     val Uri: String,
     val Method: String

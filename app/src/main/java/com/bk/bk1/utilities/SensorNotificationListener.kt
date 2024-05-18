@@ -1,4 +1,4 @@
-package com.bk.bk1.data
+package com.bk.bk1.utilities
 
 import android.util.Log
 import com.bk.bk1.events.SensorDataReceivedEvent

@@ -87,7 +87,8 @@ class SensorService() : Service() {
 
     @Subscribe
     fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
-        if (event.connectionStatus <= SensorConnectionStatus.DISCONNECTED
+        if (
+            event.connectionStatus <= SensorConnectionStatus.DISCONNECTED
             && trackingStatus == TrackingStatus.TRACKING
             ) {
             stopTracking()
