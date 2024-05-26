@@ -227,9 +227,34 @@ fun MainMapScreen(
                     viewModel = viewModel,
                     locationPermissionsState = locationPermissionsState,
                 )
+
+                if (state.trackingStatus == TrackingStatus.TRACKING) {
+                    TrackingStatusBar(modifier = Modifier.align(Alignment.BottomCenter))
+                }
             }
         }
     )
+}
+
+@Composable
+fun TrackingStatusBar(
+    modifier: Modifier
+) {
+    Box(
+        modifier = modifier
+            .padding(16.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.Black)
+
+    ) {
+        Text(
+            text = stringResource(R.string.label_tracking_on),
+            color = DimGreen,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(10.dp)
+        )
+    }
 }
 
 @Composable

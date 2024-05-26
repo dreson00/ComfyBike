@@ -55,5 +55,6 @@
     <string name="label_speed_filter_no_records">Žádné záznamy odpovídající filtru</string>
     <string name="label_add_speed_filter_watermark">Přidat razítko s filtrem rychlostí</string>
     <string name="label_speed_range_x">Rozsah rychlosti: </string>
+    <string name="label_tracking_on">Zaznamenávání je zapnuté</string>
 
 </resources>
