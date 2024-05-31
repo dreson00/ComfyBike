@@ -224,7 +224,8 @@ fun SettingsCard(
                     .padding(10.dp)
             ) {
                 SpeedFilterSlider(
-                    speedRange = state.speedMin..state.speedMax
+                    speedRange = state.speedMin..state.speedMax,
+                    initialValue = state.speedFilterRange
                 ) {
                     viewModel.filterRecordsBySpeedRange(it)
                 }

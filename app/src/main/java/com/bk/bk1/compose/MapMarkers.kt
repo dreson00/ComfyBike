@@ -192,7 +192,7 @@ fun ComfortIndexRecordMapMarkerWindow(record: ComfortIndexRecord) {
                 color = Color.Black
             )
             Text(
-                text = "${stringResource(R.string.speed_x)} ${record.bicycleSpeed}",
+                text = "${stringResource(R.string.speed_x)} ${"%.2f km/h".format(record.bicycleSpeed)}",
                 color = Color.Black
             )
         }
