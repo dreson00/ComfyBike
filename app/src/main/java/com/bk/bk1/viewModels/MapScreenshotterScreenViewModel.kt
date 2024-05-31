@@ -24,11 +24,11 @@ class MapScreenshotterScreenViewModel @Inject constructor(
     private var _comfortIndexRecords = emptyList<ComfortIndexRecord>()
 
     fun hideUI() {
-        state.update { it.copy(hideUI = true) }
+        state.value = state.value.copy(hideUI = true)
     }
 
     fun beginCapture() {
-        state.update { it.copy(beginCapture = true) }
+        state.value = state.value.copy(beginCapture = true)
     }
 
     fun setImageSavingStatus(imageSavingStatus: ImageSavingStatus) {
