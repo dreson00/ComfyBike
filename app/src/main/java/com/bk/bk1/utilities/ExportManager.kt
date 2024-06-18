@@ -53,6 +53,7 @@ class ExportManager {
         return appDirectory
     }
 
+    // Creates a file with a unique name.
     private fun createFile(folder: File, fileName: String, extensionNoDot: String): File {
         var file = File(folder, "$fileName.$extensionNoDot")
         var duplicateNumber = 0

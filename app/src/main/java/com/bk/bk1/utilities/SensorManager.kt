@@ -24,6 +24,7 @@ class SensorManager @Inject constructor(
     private var isRegisteredForBus = false
 
 
+    // Registers self and sensorConnectionListener for bus and connects to sensor
     fun connectToSensor(sensorAddress: String) {
         if (!isRegisteredForBus) {
             bus.register(this)
@@ -34,16 +35,16 @@ class SensorManager @Inject constructor(
         mds.connect(sensorAddress, sensorConnectionListener)
     }
 
+    // Stops subscribing for sensor data, disconnects from sensor and unregisters from event bus.
     fun disconnectSensor() {
         unsubscribe()
         deviceAddress?.let {
             mds.disconnect(it)
         }
-        bus.unregister(this)
-        bus.unregister(sensorConnectionListener)
         isRegisteredForBus = false
     }
 
+    // Subscribes for sensor data.
     private fun subscribe() {
         bus.register(sensorNotificationListener)
         mdsSubscription = mds?.subscribe(
@@ -54,6 +55,7 @@ class SensorManager @Inject constructor(
         isSubscribed = true
     }
 
+    // Unsubscribes from sensor.
     private fun unsubscribe() {
         if (isSubscribed) {
             mdsSubscription?.unsubscribe()

@@ -44,6 +44,7 @@ class TrackingManager @Inject constructor(
     var sensorOrientationCalculator = SensorOrientationCalculator()
 
     fun startTracking() {
+        // Registers for event bus and GPS location changes.
         bus.register(this)
         locationClient
             .getLocationUpdates(500L)
@@ -53,6 +54,7 @@ class TrackingManager @Inject constructor(
             }
             .launchIn(scope)
 
+        // Creates a new Track record in the DB
         runBlocking {
             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             val dateString = formatter.format(Date())
@@ -63,6 +65,7 @@ class TrackingManager @Inject constructor(
         sensorOrientationCalculator = SensorOrientationCalculator()
 //        bus.register(sensorOrientationCalculator)
 
+        // Posts events about new TrackId and tracking status.
         bus.post(produceCurrentTrackIdChangedEvent())
         trackingStatus = TrackingStatus.TRACKING
         bus.post(produceTrackingStatusChangedEvent())
@@ -72,12 +75,16 @@ class TrackingManager @Inject constructor(
         if (trackingStatus <= TrackingStatus.NOT_TRACKING) {
             return
         }
+
         val toDeleteCandidateId = lastTrackId
         lastTrackId = null
+
+        // Posts events about new TrackId and tracking status.
         bus.post(produceCurrentTrackIdChangedEvent())
         trackingStatus = TrackingStatus.NOT_TRACKING
         bus.post(produceTrackingStatusChangedEvent())
 
+        // Deletes last TrackRecord if there are no ComfortIndexRecords associated with the TrackRecord.
         scope.launch {
             toDeleteCandidateId?.let {
                 if (comfortIndexRecordRepository.getComfortIndexRecordCount(it) == 0) {
@@ -86,6 +93,7 @@ class TrackingManager @Inject constructor(
             }
         }
 
+        // Unregisters from event bus and GPS location changes.
         locationClient.removeLocationUpdates()
 //        bus.unregister(sensorOrientationCalculator)
         bus.unregister(this)
@@ -95,19 +103,26 @@ class TrackingManager @Inject constructor(
     fun onSensorDataReceived(event: SensorDataReceivedEvent) {
         val sensorData = event.data ?: return
         sensorOrientationCalculator.onSensorChanged(event.data)
+
+        // Adds received sensor data to oneSecondDataList
+        // if the time between current data and the last processed data is less than one second.
         if (sensorData.Body.Timestamp - lastTimestamp < 1000) {
             oneSecondDataList.add(sensorData)
         }
+        // Updates timestamp, calls processAndSaveSensorData and clears oneSecondDataList
+        // if one second or more elapsed between current and last processed data.
         else {
             lastTimestamp = sensorData.Body.Timestamp
             if (oneSecondDataList.isNotEmpty()) {
                 processAndSaveSensorData()
                 oneSecondDataList = mutableListOf()
+                oneSecondDataList.add(sensorData)
             }
         }
     }
 
     private fun processAndSaveSensorData() {
+        // Calculates Dynamic Comfort Index according to a formula.
         var accelerationPowSum = 0.0
         var filteredAccYCount = 0
         val g = 9.8
@@ -124,6 +139,7 @@ class TrackingManager @Inject constructor(
         if (filteredAccYCount > 0 && accelerationPowSum != 0.0) {
             val comfortIndex = (1.0 / sqrt((1.0 / filteredAccYCount) * accelerationPowSum)).toFloat()
             scope.launch {
+                // Gets current location and inserts a new ComfortIndexRecord into DB.
                 val currentLocation = location
                 if (currentLocation != null && lastTrackId != null && currentLocation.hasSpeed()) {
                     comfortIndexRecordRepository.upsertRecord(

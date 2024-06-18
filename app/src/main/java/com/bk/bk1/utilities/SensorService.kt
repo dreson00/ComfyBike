@@ -35,6 +35,7 @@ class SensorService() : Service() {
     private var trackingStatus = TrackingStatus.NOT_TRACKING
 
 
+    // Called when service receives an action. Calls a method according to the received action.
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             Actions.CONNECT.toString() -> {
@@ -53,6 +54,7 @@ class SensorService() : Service() {
         return START_STICKY
     }
 
+    // Registers service for event bus, creates a notification and starts service.
     private fun startService() {
         if (!isRegisteredForBus) {
             isRegisteredForBus = true
@@ -67,6 +69,7 @@ class SensorService() : Service() {
         startForeground(1, notification.build())
     }
 
+    // Stops tracking, disconnects sensor, unregisters from event bus and stops self.
     private fun stopService() {
         stopTracking()
         sensorManager.disconnectSensor()
@@ -85,6 +88,7 @@ class SensorService() : Service() {
         trackingManager.stopTracking()
     }
 
+    // Stops tracking if tracking is ON and sensor disconnects.
     @Subscribe
     fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
         if (
@@ -106,6 +110,7 @@ class SensorService() : Service() {
     }
 
 
+    // Defines actions for this service.
     enum class Actions {
         CONNECT, STOP_ALL, START_TRACKING, STOP_TRACKING
     }
