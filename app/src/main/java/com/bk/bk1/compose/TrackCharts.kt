@@ -35,13 +35,29 @@ import com.patrykandpatrick.vico.core.model.columnSeries
 import com.patrykandpatrick.vico.core.model.lineSeries
 import java.math.RoundingMode
 
+
+@Suppress("UNCHECKED_CAST")
 @Composable
 fun CiDistributionColumnChart(comfortIndexRecords: List<ComfortIndexRecord>) {
     val scrollState = rememberVicoScrollState()
     val zoomState = rememberVicoZoomState(zoomEnabled = false)
-    val intervals = List(10) { it * 0.1f..(it + 1) * 0.1f }
-    val counts = intervals.map { interval ->
-        comfortIndexRecords.count { it.comfortIndex in interval }
+    val intervals = List<Any>(10) {
+        if (it < 9) {
+            it * 0.1f..<(it + 1) * 0.1f
+        }
+        else {
+            it * 0.1f..(it + 1) * 0.1f
+        }
+    }
+    val counts = intervals.mapIndexed { index, interval ->
+        comfortIndexRecords.count {
+            if (index < 9) {
+                it.comfortIndex in interval as OpenEndRange<Float>
+            }
+            else {
+                it.comfortIndex in interval as ClosedFloatingPointRange<Float>
+            }
+        }
     }
 
     val chartModelProducer = remember { CartesianChartModelProducer.build() }
@@ -98,7 +114,8 @@ fun CiDistributionColumnChart(comfortIndexRecords: List<ComfortIndexRecord>) {
                     margins = dimensionsOf(top = 20.dp)
                 ),
                 valueFormatter = {
-                        value, _, _ -> "<0.${value.toInt() - 1}, 0.${value.toInt()})"
+                        value, _, _ ->
+                    "<0.${value.toInt() - 1}, 0.${value.toInt()}" + if (value < 10) ")" else ">"
                 },
                 labelRotationDegrees = 0f,
                 label = rememberAxisLabelComponent(
