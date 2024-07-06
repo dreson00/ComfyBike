@@ -49,6 +49,7 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
 // Component that represents a screen where the user can see nearby movesense sensors
 // and connect to one of them.
+@OptIn(ExperimentalPermissionsApi::class)
 @SuppressLint("MissingPermission")
 @Composable
 fun SensorConnectScreen(
