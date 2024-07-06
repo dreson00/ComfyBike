@@ -8,6 +8,7 @@ import com.movesense.mds.MdsException
 import com.squareup.otto.Bus
 import com.squareup.otto.Produce
 
+// Class with callbacks for receiving updates on the Movesense sensor connection status.
 class SensorConnectionListener(
     private val bus: Bus
 ) : MdsConnectionListener {

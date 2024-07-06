@@ -9,6 +9,7 @@ import com.squareup.otto.Bus
 import com.squareup.otto.Produce
 import kotlinx.serialization.json.Json
 
+// Class with callbacks for receiving data from Movesense sensor.
 class SensorNotificationListener(
     private val bus: Bus
 ): MdsNotificationListener {

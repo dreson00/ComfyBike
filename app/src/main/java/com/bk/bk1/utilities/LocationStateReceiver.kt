@@ -6,6 +6,7 @@ import android.content.Intent
 import android.location.LocationManager
 import javax.inject.Inject
 
+// Class that contains an updater so that the app can react to enabling / disabling location.
 class LocationStateReceiver @Inject constructor(
     private val locationManager: LocationManager,
     private val locationStateUpdater: LocationStateUpdater

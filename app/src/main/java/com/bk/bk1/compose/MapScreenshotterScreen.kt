@@ -62,6 +62,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.smarttoolfactory.screenshot.ScreenshotBox
 import com.smarttoolfactory.screenshot.rememberScreenshotState
 
+// Component that represents a screen for capturing screenshots of the map.
 @Composable
 fun MapScreenshotterScreen(
     viewModel: MapScreenshotterScreenViewModel,
@@ -72,6 +73,7 @@ fun MapScreenshotterScreen(
     val screenshotState = rememberScreenshotState()
     val context = LocalContext.current
 
+    // Saves the image of the screen when bitmap is not null.
     if (screenshotState.bitmap != null && trackId != null) {
         LaunchedEffect(Unit) {
             viewModel.setImageSavingStatus(ImageSavingStatus.PROCESSING)
@@ -79,6 +81,8 @@ fun MapScreenshotterScreen(
         }
     }
 
+    // Displays message to tell the user that saving the image was (not) successful
+    // and navigates the user to the previous screen.
     if (state.imageSavingStatus == ImageSavingStatus.SUCCESS) {
         LaunchedEffect(Unit) {
             Toast.makeText(
@@ -100,6 +104,7 @@ fun MapScreenshotterScreen(
         }
     }
 
+    // Component that allows the app to capture an image of its content.
     ScreenshotBox(
         modifier = Modifier
             .fillMaxSize(),
@@ -110,12 +115,15 @@ fun MapScreenshotterScreen(
                 .fillMaxSize()
         ) {
             val cameraPositionState = rememberCameraPositionState()
+
+            // Initialize data if there is a trackId.
             trackId?.let {
                 LaunchedEffect(Unit) {
                     viewModel.initTrackData(it)
                 }
                 val comfortIndexRecords = state.comfortIndexRecords
 
+                // Zoom camera to a record that is in the middle of the list.
                 if (comfortIndexRecords.isNotEmpty()) {
                     val middleRecord = comfortIndexRecords[comfortIndexRecords.count() / 2]
                     LaunchedEffect(Unit) {
@@ -148,6 +156,7 @@ fun MapScreenshotterScreen(
                 }
             }
 
+            // Displays a watermark with current bicycle speed range.
             if (state.showSpeedFilterWatermark) {
                 Box(
                     modifier = Modifier
@@ -165,11 +174,12 @@ fun MapScreenshotterScreen(
                 }
             }
 
-
+            // Shows settings menu.
             if (state.showSettings && !state.hideUI) {
                 SettingsCard(viewModel)
             }
 
+            // Shows a progress indicator when saving an image.
             if (state.imageSavingStatus == ImageSavingStatus.PROCESSING) {
                 Surface(
                     modifier = Modifier
@@ -184,6 +194,7 @@ fun MapScreenshotterScreen(
                 )
             }
 
+            // Displays buttons.
             if (!state.hideUI) {
                 ButtonRow(
                     modifier = Modifier
@@ -195,6 +206,7 @@ fun MapScreenshotterScreen(
                 )
             }
 
+            // Captures a screenshot of the map.
             if (state.beginCapture) {
                 LaunchedEffect(Unit) {
                     screenshotState.capture()
@@ -204,6 +216,8 @@ fun MapScreenshotterScreen(
     }
 }
 
+// Displays a settings card with speed range slider
+// and a checkbox that enables the speed filter watermark.
 @Composable
 fun SettingsCard(
     viewModel: MapScreenshotterScreenViewModel
@@ -270,6 +284,7 @@ fun SettingsCard(
     }
 }
 
+// Displays three buttons - Capture screenshot / Show settings / Cancel
 @Composable
 fun ButtonRow(
     modifier: Modifier,
@@ -339,6 +354,8 @@ fun ButtonRow(
         }
     }
 }
+
+// Testing previews.
 
 @Preview
 @Composable

@@ -7,7 +7,7 @@ import com.bk.bk1.data.ComfortIndexRecordRepository
 import com.bk.bk1.enums.ImageSavingStatus
 import com.bk.bk1.models.ComfortIndexRecord
 import com.bk.bk1.states.MapScreenshotterScreenState
-import com.bk.bk1.utilities.ExportManager
+import com.bk.bk1.utilities.TrackRecordExportManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MapScreenshotterScreenViewModel @Inject constructor(
-    private val exportManager: ExportManager,
+    private val trackRecordExportManager: TrackRecordExportManager,
     private val comfortIndexRecordRepository: ComfortIndexRecordRepository
 ) : ViewModel() {
     val state = MutableStateFlow(MapScreenshotterScreenState())
@@ -75,7 +75,7 @@ class MapScreenshotterScreenViewModel @Inject constructor(
 
     fun saveImage(bitmap: Bitmap, trackId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            val exportStatus = exportManager.saveBitmapAsPng(bitmap, "track_$trackId")
+            val exportStatus = trackRecordExportManager.saveBitmapAsPng(bitmap, "track_$trackId")
             if (exportStatus == 0) {
                 setImageSavingStatus(ImageSavingStatus.SUCCESS)
             }

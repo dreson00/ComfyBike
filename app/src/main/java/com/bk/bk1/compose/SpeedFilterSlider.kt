@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.bk.bk1.R
 
+// Component representing a slider that can be used for filtering ComfortIndexRecords.
 @Composable
 fun SpeedFilterSlider(
     speedRange: ClosedFloatingPointRange<Float>,

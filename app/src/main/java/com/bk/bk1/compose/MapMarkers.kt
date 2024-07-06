@@ -43,6 +43,9 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberMarkerState
 import com.google.maps.android.ui.IconGenerator
 
+
+// Displays a marker representing a TrackRecord with the track's name.
+// After clicking displays a window with a button that navigates user to the details screen.
 @SuppressLint("SetTextI18n")
 @Composable
 fun TrackMarker(
@@ -111,6 +114,9 @@ fun TrackMarker(
     }
 }
 
+// Displays a marker representing a ComfortIndexRecord as a colored circle.
+// Color of the circle depends on the comfort index value.
+// After clicking displays a window with the exact comfort index value and bicycle speed.
 @Composable
 fun ComfortIndexRecordMapMarker(
     record: ComfortIndexRecord
@@ -133,6 +139,8 @@ fun ComfortIndexRecordMapMarker(
     }
 }
 
+// Unoptimized version of the previous marker.
+// Doesn't use remember API to avoid bugs when updating the marker with new values.
 @Composable
 fun UnoptimizedComfortIndexRecordMapMarker(
     record: ComfortIndexRecord,
@@ -153,6 +161,7 @@ fun UnoptimizedComfortIndexRecordMapMarker(
     }
 }
 
+// Component for the window that show up after clicking on a ComfortIndexMarker.
 @Composable
 fun ComfortIndexRecordMapMarkerWindow(record: ComfortIndexRecord) {
     Box {
@@ -199,12 +208,13 @@ fun ComfortIndexRecordMapMarkerWindow(record: ComfortIndexRecord) {
     }
 }
 
+// Functions for creating ComfortIndexRecordMapMarker icons.
 fun getColorFromCiRecord(record: ComfortIndexRecord): Color {
     val hue = 100 * record.comfortIndex
     return Color.hsl(hue, 1f, 0.5f)
 }
 
-//https://towardsdev.com/jetpack-compose-custom-google-map-marker-erselan-khan-e6e04178a30b
+// Source: https://towardsdev.com/jetpack-compose-custom-google-map-marker-erselan-khan-e6e04178a30b
 fun bitmapDescriptorFromVector(
     context: Context,
     vectorResId: Int,

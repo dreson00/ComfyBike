@@ -11,6 +11,7 @@ import androidx.lifecycle.MutableLiveData
 import javax.inject.Inject
 
 
+// Class that uses the Bluetooth adapter to find nearby sensors.
 class BluetoothScanManager @Inject constructor(private val bluetoothManager: BluetoothManager) {
     private var scanCallback: ScanCallback? = null
     private var leScanner: BluetoothLeScanner? = null

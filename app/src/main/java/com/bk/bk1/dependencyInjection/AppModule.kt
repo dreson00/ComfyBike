@@ -10,7 +10,7 @@ import com.bk.bk1.data.TrackRecordRepository
 import com.bk.bk1.utilities.BluetoothScanManager
 import com.bk.bk1.utilities.BluetoothStateReceiver
 import com.bk.bk1.utilities.BluetoothStateUpdater
-import com.bk.bk1.utilities.ExportManager
+import com.bk.bk1.utilities.TrackRecordExportManager
 import com.bk.bk1.utilities.LocationStateReceiver
 import com.bk.bk1.utilities.LocationStateUpdater
 import com.bk.bk1.utilities.SensorManager
@@ -125,7 +125,7 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideFileManager(): ExportManager {
-        return ExportManager()
+    fun provideFileManager(): TrackRecordExportManager {
+        return TrackRecordExportManager()
     }
 }

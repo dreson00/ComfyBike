@@ -64,6 +64,7 @@ class MainMapScreenViewModel @Inject constructor(
     private val _isBluetoothAdapterOn = bluetoothStateUpdater.bluetoothState
     private val _isLocationEnabled = locationStateUpdater.locationState
 
+    // Combines original state with flows to create an easily updatable state object.
     val state = combine(
         _state,
         _isBluetoothAdapterOn,

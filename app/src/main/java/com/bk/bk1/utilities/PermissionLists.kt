@@ -3,6 +3,8 @@ package com.bk.bk1.utilities
 import android.Manifest
 import android.os.Build
 
+// Functions for creating permissions lists according to the current Android version.
+
 
 fun getLocationPermissionList(): List<String> {
     return listOf(

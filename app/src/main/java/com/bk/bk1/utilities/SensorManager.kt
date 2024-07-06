@@ -24,7 +24,7 @@ class SensorManager @Inject constructor(
     private var isRegisteredForBus = false
 
 
-    // Registers self and sensorConnectionListener for bus and connects to sensor
+    // Registers self and sensorConnectionListener for bus and connects to sensor.
     fun connectToSensor(sensorAddress: String) {
         if (!isRegisteredForBus) {
             bus.register(this)

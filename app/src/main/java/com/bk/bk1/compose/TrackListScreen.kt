@@ -66,11 +66,14 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import me.saket.cascade.CascadeDropdownMenu
 import me.saket.cascade.rememberCascadeState
 
+// Component that represents a screen with a list of all TrackRecords.
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavController) {
 
     val state by viewModel.state.collectAsState()
+
+    // Permissions handling
     val externalStoragePermissionsState = rememberMultiplePermissionsState(
         permissions = getExternalStoragePermissionList()
     )
@@ -80,6 +83,7 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
     }
 
+    // CSV export handling
     if (state.exportCsvStatus != ExportCsvStatus.NOT_SAVING) {
         val message = when (state.exportCsvStatus) {
             ExportCsvStatus.SUCCESS -> {
@@ -112,6 +116,7 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
         )
     }
 
+    // Main container for this screen.
     Scaffold(
         topBar = {
             TopAppBar(
@@ -144,6 +149,8 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
                     )
                 }
                 else {
+
+                    // Displays a list of all TrackRecords.
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -193,6 +200,9 @@ fun TrackListScreen(viewModel: TrackListScreenViewModel, navController: NavContr
     )
 }
 
+// Component that represents a list item on this screen.
+// Navigates user to the details screen when clicked.
+// Has a button to allow the user to export this track or delete it.
 @Composable
 fun TrackListItem(
     track: TrackRecord,
@@ -304,6 +314,8 @@ fun TrackListItem(
         }
     }
 }
+
+// Testing previews.
 
 @Preview
 @Composable

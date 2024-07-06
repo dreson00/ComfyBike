@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import javax.inject.Inject
 
+// Class that contains an updater so that the app can react to Bluetooth adapter changes.
 class BluetoothStateReceiver @Inject constructor(
     private val bluetoothStateUpdater: BluetoothStateUpdater
 ) : BroadcastReceiver() {

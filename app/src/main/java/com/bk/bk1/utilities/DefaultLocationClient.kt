@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 
+// Class that can periodically update user's location.
 class DefaultLocationClient(
     private val context: Context,
     private val client: FusedLocationProviderClient

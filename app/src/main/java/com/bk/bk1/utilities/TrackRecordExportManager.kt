@@ -8,7 +8,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
-class ExportManager {
+// Class for exporting TrackRecords
+class TrackRecordExportManager {
     fun saveBitmapAsPng(bitmap: Bitmap, fileName: String): Int {
         val folder = getOrCreateFolder()
         val file = createFile(folder, fileName, "png")

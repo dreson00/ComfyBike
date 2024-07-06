@@ -94,6 +94,7 @@ import com.leinardi.android.speeddial.compose.FabWithLabel
 import com.leinardi.android.speeddial.compose.SpeedDial
 import com.leinardi.android.speeddial.compose.SpeedDialState
 
+// Component that represent the main screen.
 @SuppressLint("SetTextI18n")
 @Composable
 @OptIn(ExperimentalPermissionsApi::class
@@ -113,6 +114,7 @@ fun MainMapScreen(
         permissions = getBluetoothPermissionList()
     )
 
+    // Show dialog window if the app doesn't have all necessary permissions.
     LaunchedEffect(state.showLocationPermissionRequestPreference) {
         if (state.showLocationPermissionRequestPreference == "true" && !locationPermissionsState.allPermissionsGranted) {
             viewModel.setShowLocationPermissionRequest(true)
@@ -149,6 +151,7 @@ fun MainMapScreen(
         viewModel.enableLocationTracking()
     }
 
+    // Update Map camera if location changes and camera following is enabled.
     LaunchedEffect(state.location, state.isLocationEnabled) {
         if (state.cameraFollow && state.location != null && state.isLocationEnabled) {
             cameraPositionState.animate(
@@ -161,6 +164,7 @@ fun MainMapScreen(
         }
     }
 
+    // Main container for this screen.
     Scaffold(
         floatingActionButton = {
             SpeedDialButtonMenu(
@@ -174,6 +178,8 @@ fun MainMapScreen(
         },
         content = { padding ->
             Box(modifier = Modifier.padding(padding)) {
+
+                // Google map element. Has custom style that doesn't display point of interest.
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     uiSettings = MapUiSettings(zoomControlsEnabled = false, myLocationButtonEnabled = false),
@@ -190,6 +196,7 @@ fun MainMapScreen(
                         }
                     }
 
+                    // Display recorded comfort index markers if tracking is on.
                     if (state.currentTrackId != null) {
                         if (state.currentComfortIndexRecords.isNotEmpty()) {
                             state.currentComfortIndexRecords.forEach { record ->
@@ -198,6 +205,7 @@ fun MainMapScreen(
                         }
                     }
 
+                    // Icon generator for TrackRecord markers.
                     val iconGenerator = remember { IconGenerator(context) }
                     val markerView = remember { LayoutInflater.from(context).inflate(R.layout.custom_marker_layout, null) }
                     val markerIconView = remember { markerView.findViewById<ImageView>(R.id.marker_icon) }
@@ -205,6 +213,7 @@ fun MainMapScreen(
                     markerIconView.setColorFilter(Red400.toArgb())
                     markerLabel.setTextColor(Red400.toArgb())
 
+                    // Displays all TrackRecords as markers on the map.
                     if (state.firstComfortIndexRecordForAllTracks.isNotEmpty()) {
                         state.firstComfortIndexRecordForAllTracks.forEach { record ->
                             TrackMarker(
@@ -228,6 +237,7 @@ fun MainMapScreen(
                     locationPermissionsState = locationPermissionsState,
                 )
 
+                // Displays TrackingStatusBar when tracking is on.
                 if (state.trackingStatus == TrackingStatus.TRACKING) {
                     TrackingStatusBar(modifier = Modifier.align(Alignment.BottomCenter))
                 }
@@ -257,6 +267,8 @@ fun TrackingStatusBar(
     }
 }
 
+// Displays a button that toggles map camera following.
+// If location isn't enabled, displays a warning instead.
 @Composable
 fun FollowLocationButton(
     state: MainMapScreenState,
@@ -327,6 +339,8 @@ fun FollowLocationButton(
     }
 }
 
+// Displays a button that unfolds into a menu.
+// Menu buttons change according to sensor and tracking status.
 @OptIn(ExperimentalAnimationApi::class, ExperimentalPermissionsApi::class)
 @Composable
 fun SpeedDialButtonMenu(
@@ -432,7 +446,8 @@ fun SpeedDialButtonMenu(
 }
 
 
-
+// Displays a small bar with sensor connection status.
+// Also displays a warning if location isn't enabled.
 @Composable
 fun SensorStatusBar(
     state: MainMapScreenState
@@ -540,6 +555,8 @@ fun SensorStatusBar(
         }
     }
 }
+
+// Testing previews.
 
 @Composable
 @Preview

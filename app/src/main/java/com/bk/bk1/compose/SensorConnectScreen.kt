@@ -47,6 +47,8 @@ import com.bk.bk1.viewModels.SensorConnectScreenViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
+// Component that represents a screen where the user can see nearby movesense sensors
+// and connect to one of them.
 @SuppressLint("MissingPermission")
 @Composable
 fun SensorConnectScreen(
@@ -70,6 +72,7 @@ fun SensorConnectScreen(
         permissions = getPostNotificationsPermissionList()
     )
 
+    // Stop scanning a return user to the previous screen if Bluetooth adapter is off.
     LaunchedEffect(state.isBluetoothAdapterOn) {
         if (!state.isBluetoothAdapterOn) {
             viewModel.stopScan()
@@ -108,7 +111,7 @@ fun SensorConnectScreen(
         )
     }
 
-
+    // Main container. Displays a list of nearby movesense sensors.
     Scaffold(
         topBar = {
             TopAppBar(
@@ -179,6 +182,8 @@ fun SensorConnectScreen(
         }
     )
 }
+
+// Testing previews.
 
 @Preview
 @Composable

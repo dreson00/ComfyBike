@@ -8,7 +8,7 @@ import com.bk.bk1.enums.ExportCsvStatus
 import com.bk.bk1.events.CurrentTrackIdChangedEvent
 import com.bk.bk1.models.TrackRecord
 import com.bk.bk1.states.TrackListScreenState
-import com.bk.bk1.utilities.ExportManager
+import com.bk.bk1.utilities.TrackRecordExportManager
 import com.squareup.otto.Bus
 import com.squareup.otto.Subscribe
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class TrackListScreenViewModel @Inject constructor(
     private val bus: Bus,
-    private val exportManager: ExportManager,
+    private val trackRecordExportManager: TrackRecordExportManager,
     private val trackRecordRepository: TrackRecordRepository,
     private val comfortIndexRecordRepository: ComfortIndexRecordRepository
 ) : ViewModel() {
@@ -37,9 +37,6 @@ class TrackListScreenViewModel @Inject constructor(
             }
         }
     }
-
-
-
 
     fun deleteTrack(trackRecord: TrackRecord) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -69,7 +66,7 @@ class TrackListScreenViewModel @Inject constructor(
     fun saveCiRecordsAsCsv(tracKRecord: TrackRecord) {
         viewModelScope.launch(Dispatchers.IO) {
             val ciRecordList = comfortIndexRecordRepository.getRecordListByTrackId(tracKRecord.id)
-            val status = exportManager
+            val status = trackRecordExportManager
                 .saveCiListAsCsv(ciRecordList, "track_${tracKRecord.id}")
             state.update {
                 it.copy(

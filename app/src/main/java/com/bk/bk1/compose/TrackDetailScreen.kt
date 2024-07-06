@@ -153,7 +153,7 @@ fun TrackDetailScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
 
-            //topBar with track name and back button
+            // TopBar with track name and back button
             TopAppBar(
                 title = { Text("${stringResource(R.string.label_track_x)} $trackId") },
                 navigationIcon = {
@@ -261,7 +261,7 @@ fun TrackDetailScreen(
         },
         sheetContent = {
 
-            // animation for button spacing change when sheet is expanding / hiding
+            // Animation for button spacing change when sheet is expanding / hiding
             val spacing: Dp by animateDpAsState(
                 if (bottomSheetMove.value == BottomSheetMoves.MovingDown)
                     35.dp else (-70).dp,
@@ -357,6 +357,7 @@ fun TrackDetailScreen(
     )
 }
 
+// Container for the contents of TrackDetailScreen
 @Composable
 fun TrackDetailCard(
     content: @Composable (() -> Unit)
@@ -377,6 +378,7 @@ fun TrackDetailCard(
     }
 }
 
+// Container for a table at the top of the screen.
 @Composable
 fun TrackDetailTable(
     leftColumn: @Composable (() -> Unit),
@@ -421,6 +423,8 @@ suspend fun toggleBottomSheet(
         sheetValue.value = SheetValue.Expanded
     }
 }
+
+// Testing previews
 
 @Composable
 //@Preview
