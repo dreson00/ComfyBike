@@ -1,7 +1,8 @@
 package com.bk.bk1.events
 
-import com.bk.bk1.models.Imu
+import com.bk.bk1.models.LinearAcceleration
+
 
 data class SensorDataReceivedEvent(
-    val data: Imu?
+    val data: LinearAcceleration?
 )
