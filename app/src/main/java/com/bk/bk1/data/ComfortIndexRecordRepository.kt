@@ -35,7 +35,7 @@ class ComfortIndexRecordRepository @Inject constructor(private val trackDatabase
         return comfortIndexRecordDao.getFirstComfortIndexRecordForAll()
     }
 
-    fun getComfortIndexRecordCount(trackId: Int): Int {
+    suspend fun getComfortIndexRecordCount(trackId: Int): Int {
         return comfortIndexRecordDao.getComfortIndexRecordCount(trackId)
     }
 }

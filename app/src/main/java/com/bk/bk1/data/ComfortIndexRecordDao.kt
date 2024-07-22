@@ -32,7 +32,7 @@ interface ComfortIndexRecordDao {
     fun getFirstComfortIndexRecordForAll(): Flow<List<ComfortIndexRecord>>
 
     @Query("SELECT COUNT(*) FROM ComfortIndexRecord WHERE trackRecordId = :trackId")
-    fun getComfortIndexRecordCount(trackId: Int): Int
+    suspend fun getComfortIndexRecordCount(trackId: Int): Int
 
 
 }

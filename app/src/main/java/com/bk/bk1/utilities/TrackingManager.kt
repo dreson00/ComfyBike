@@ -40,6 +40,7 @@ class TrackingManager @Inject constructor(
     private var oneSecondDataList = mutableListOf<LinearAcceleration>()
     private var location: Location? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val comfortIndexRecordLimit = 20
 
     fun startTracking() {
         // Registers for event bus and GPS location changes.
@@ -60,7 +61,7 @@ class TrackingManager @Inject constructor(
             lastTrackId = trackRecordRepository.upsertTrackRecord(trackRecord).toInt()
         }
 
-        // Posts events about new TrackId and tracking status.
+        // Posts events about new trackId and tracking status.
         bus.post(produceCurrentTrackIdChangedEvent())
         trackingStatus = TrackingStatus.TRACKING
         bus.post(produceTrackingStatusChangedEvent())
@@ -111,6 +112,7 @@ class TrackingManager @Inject constructor(
                 processAndSaveSensorData()
                 oneSecondDataList = mutableListOf()
                 oneSecondDataList.add(sensorData)
+                restartIfFull()
             }
         }
     }
@@ -146,6 +148,20 @@ class TrackingManager @Inject constructor(
                         )
                     )
                 }
+            }
+        }
+    }
+
+    // Restarts tracking if the DCI record count reached its limit.
+    private fun restartIfFull() {
+        var dciCount = 0
+        lastTrackId?.let {
+            runBlocking {
+                dciCount = comfortIndexRecordRepository.getComfortIndexRecordCount(it)
+            }
+            if (dciCount >= comfortIndexRecordLimit) {
+                stopTracking()
+                startTracking()
             }
         }
     }
