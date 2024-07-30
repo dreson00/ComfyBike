@@ -56,5 +56,7 @@
     <string name="label_add_speed_filter_watermark">Přidat razítko s filtrem rychlostí</string>
     <string name="label_speed_range_x">Rozsah rychlosti: </string>
     <string name="label_tracking_on">Zaznamenávání je zapnuté</string>
-
+    <string name="label_settings">Nastavení</string>
+    <string name="label_dci_limit_x">Limit DCI záznamů v jedné trase:</string>
+    <string name="label_set_dci_limit">Nastavit limit DCI záznamů v jedné trase</string>
 </resources>

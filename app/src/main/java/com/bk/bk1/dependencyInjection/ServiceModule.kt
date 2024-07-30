@@ -1,5 +1,6 @@
 package com.bk.bk1.dependencyInjection
 
+import android.app.Application
 import android.content.Context
 import com.bk.bk1.data.ComfortIndexRecordRepository
 import com.bk.bk1.data.TrackRecordRepository
@@ -34,12 +35,14 @@ class ServiceModule {
     @ServiceScoped
     @Provides
     fun provideTrackingManager(
+        application: Application,
         comfortIndexRecordRepository: ComfortIndexRecordRepository,
         trackRecordRepository: TrackRecordRepository,
         bus: Bus,
         locationClient: LocationClient
     ): TrackingManager {
         return TrackingManager(
+            application,
             comfortIndexRecordRepository,
             trackRecordRepository,
             bus,

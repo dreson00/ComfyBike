@@ -18,6 +18,7 @@ import androidx.navigation.navArgument
 import com.bk.bk1.compose.MainMapScreen
 import com.bk.bk1.compose.MapScreenshotterScreen
 import com.bk.bk1.compose.SensorConnectScreen
+import com.bk.bk1.compose.SettingsScreen
 import com.bk.bk1.compose.TrackDetailScreen
 import com.bk.bk1.compose.TrackListScreen
 import com.bk.bk1.ui.theme.BK1Theme
@@ -27,6 +28,7 @@ import com.bk.bk1.utilities.SensorService
 import com.bk.bk1.viewModels.MainMapScreenViewModel
 import com.bk.bk1.viewModels.MapScreenshotterScreenViewModel
 import com.bk.bk1.viewModels.SensorConnectScreenViewModel
+import com.bk.bk1.viewModels.SettingsScreenViewModel
 import com.bk.bk1.viewModels.TrackDetailScreenViewModel
 import com.bk.bk1.viewModels.TrackListScreenViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -78,6 +80,10 @@ class MainActivity : ComponentActivity() {
                     composable("trackList") {
                         val viewModel = hiltViewModel<TrackListScreenViewModel>()
                         TrackListScreen(viewModel, navController)
+                    }
+                    composable("settings") {
+                        val viewModel = hiltViewModel<SettingsScreenViewModel>()
+                        SettingsScreen(viewModel, navController)
                     }
                     composable(
                         "mapScreenshotterScreen/{trackId}",

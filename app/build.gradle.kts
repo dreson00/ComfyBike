@@ -130,4 +130,7 @@ dependencies {
     //Permissions
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
 
+    //Number picker
+    implementation("com.chargemap.compose:numberpicker:1.0.3")
+
 }

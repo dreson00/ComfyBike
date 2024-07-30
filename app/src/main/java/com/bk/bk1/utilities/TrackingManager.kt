@@ -1,5 +1,7 @@
 package com.bk.bk1.utilities
 
+import android.app.Application
+import android.content.Context
 import android.location.Location
 import com.bk.bk1.data.ComfortIndexRecordRepository
 import com.bk.bk1.data.TrackRecordRepository
@@ -29,6 +31,7 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 class TrackingManager @Inject constructor(
+    private val application: Application,
     private val comfortIndexRecordRepository: ComfortIndexRecordRepository,
     private val trackRecordRepository: TrackRecordRepository,
     private val bus: Bus,
@@ -40,7 +43,9 @@ class TrackingManager @Inject constructor(
     private var oneSecondDataList = mutableListOf<LinearAcceleration>()
     private var location: Location? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val comfortIndexRecordLimit = 20
+    private var comfortIndexRecordLimit = application
+        .getSharedPreferences("settings", Context.MODE_PRIVATE)
+        .getInt("dciRecordLimit", 300)
 
     fun startTracking() {
         // Registers for event bus and GPS location changes.
@@ -60,6 +65,11 @@ class TrackingManager @Inject constructor(
             val trackRecord = TrackRecord(name = "Trasa", time = dateString)
             lastTrackId = trackRecordRepository.upsertTrackRecord(trackRecord).toInt()
         }
+
+        // Update limit in case the user changed it while sensor was connected.
+        comfortIndexRecordLimit = application
+            .getSharedPreferences("settings", Context.MODE_PRIVATE)
+            .getInt("dciRecordLimit", 300)
 
         // Posts events about new trackId and tracking status.
         bus.post(produceCurrentTrackIdChangedEvent())

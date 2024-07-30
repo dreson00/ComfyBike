@@ -1,4 +1,6 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class,
+    ExperimentalMaterial3Api::class
+)
 
 package com.bk.bk1.compose
 
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -442,6 +445,16 @@ fun SpeedDialButtonMenu(
                 Icon(Icons.AutoMirrored.Filled.List, null)
             }
         }
+        if (state.trackingStatus == TrackingStatus.NOT_TRACKING) {
+            item {
+                FabWithLabel(
+                    onClick = { navController.navigate("settings") },
+                    labelContent = { Text(text = stringResource(R.string.label_settings)) },
+                ) {
+                    Icon(Icons.Default.Settings, null)
+                }
+            }
+        }
     }
 }
 
@@ -554,6 +567,7 @@ fun SensorStatusBar(
             }
         }
     }
+    Text(state.currentComfortIndexRecords.count().toString())
 }
 
 // Testing previews.
