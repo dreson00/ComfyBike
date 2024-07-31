@@ -60,6 +60,7 @@
     <string name="label_dci_limit_x">Limit DCI záznamů v jedné trase:</string>
     <string name="label_set_dci_limit">Nastavit limit DCI záznamů v jedné trase</string>
     <string name="notif_title_sensor_connected">Senzor je připojený</string>
+    <string name="notif_title_sensor_disconnected">Senzor je odpojený</string>
     <string name="notif_text_tracking_off">Trasování je vypnuté</string>
     <string name="notif_text_tracking_on">Trasování je zapnuté</string>
 </resources>

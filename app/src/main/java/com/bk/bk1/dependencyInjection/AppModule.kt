@@ -10,10 +10,9 @@ import com.bk.bk1.data.TrackRecordRepository
 import com.bk.bk1.utilities.BluetoothScanManager
 import com.bk.bk1.utilities.BluetoothStateReceiver
 import com.bk.bk1.utilities.BluetoothStateUpdater
-import com.bk.bk1.utilities.TrackRecordExportManager
 import com.bk.bk1.utilities.LocationStateReceiver
 import com.bk.bk1.utilities.LocationStateUpdater
-import com.bk.bk1.utilities.SensorManager
+import com.bk.bk1.utilities.TrackRecordExportManager
 import com.movesense.mds.Mds
 import com.squareup.otto.Bus
 import dagger.Module
@@ -73,23 +72,6 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideMds(
-        @ApplicationContext context: Context
-    ): Mds {
-        return Mds.builder().build(context)
-    }
-
-    @Singleton
-    @Provides
-    fun provideSensorManager(
-        bus: Bus,
-        mds: Mds
-    ): SensorManager {
-        return SensorManager(bus, mds)
-    }
-
-    @Singleton
-    @Provides
     fun provideBluetoothStateUpdater(
         bluetoothManager: BluetoothManager
     ): BluetoothStateUpdater {
@@ -121,6 +103,14 @@ object AppModule {
             locationManager,
             locationStateUpdater
         )
+    }
+
+    @Singleton
+    @Provides
+    fun provideMds(
+        @ApplicationContext context: Context
+    ): Mds {
+        return Mds.builder().build(context)
     }
 
     @Singleton

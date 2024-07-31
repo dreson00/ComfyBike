@@ -7,37 +7,44 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
 import androidx.lifecycle.MutableLiveData
 import javax.inject.Inject
 
 
 // Class that uses the Bluetooth adapter to find nearby sensors.
-class BluetoothScanManager @Inject constructor(private val bluetoothManager: BluetoothManager) {
+class BluetoothScanManager @Inject constructor(
+    private val bluetoothManager: BluetoothManager
+) {
+    val devicesLiveData: MutableLiveData<List<BluetoothDevice>> = MutableLiveData()
     private var scanCallback: ScanCallback? = null
     private var leScanner: BluetoothLeScanner? = null
-    val devicesLiveData: MutableLiveData<List<BluetoothDevice>> = MutableLiveData()
 
     @SuppressLint("MissingPermission")
     fun startScan() {
         val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
         leScanner = bluetoothAdapter?.bluetoothLeScanner
         scanCallback = object : ScanCallback() {
-            override fun onScanResult(callbackType: Int, result: ScanResult) {
-                super.onScanResult(callbackType, result)
-                val newDeviceList = devicesLiveData.value?.toMutableList() ?: mutableListOf()
-                val isDeviceInList = devicesLiveData.value?.contains(result.device)
-                if((isDeviceInList == null || isDeviceInList == false)
-                    && result.device.name != null
-                    && result.device.name.startsWith("Movesense")
-                    ) {
-                    println(result.device.address)
-                    newDeviceList.add(result.device)
-                    devicesLiveData.value = newDeviceList
+            override fun onBatchScanResults(results: MutableList<ScanResult>?) {
+                super.onBatchScanResults(results)
+                results?.let {
+                    val deviceList = results
+                        .filter {
+                            it.device.name != null && it.device.name.startsWith("Movesense")
+                        }
+                        .map { it.device }
+
+                    devicesLiveData.postValue(deviceList)
                 }
             }
         }
 
-        leScanner?.startScan(scanCallback)
+        val scanSettings = ScanSettings.Builder()
+            .setReportDelay(500)
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+            .build()
+
+        leScanner?.startScan(listOf(), scanSettings, scanCallback)
     }
     @SuppressLint("MissingPermission")
     fun stopScan() {

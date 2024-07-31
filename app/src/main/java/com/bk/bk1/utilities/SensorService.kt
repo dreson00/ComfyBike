@@ -44,12 +44,12 @@ class SensorService() : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             Actions.CONNECT.toString() -> {
-                val sensorAddress = intent.getStringExtra("sensorAddress") as String?
+                val sensorAddress = intent.getStringExtra("sensorAddress")
                 sensorAddress?.let {
                     this.sensorAddress = it
                     bus.post(produceSensorAddressEvent())
                     startService()
-                    sensorManager.connectToSensor(it)
+
                 }
             }
             Actions.STOP_ALL.toString() -> stopService()
@@ -65,9 +65,7 @@ class SensorService() : Service() {
             isRegisteredForBus = true
             bus.register(this)
         }
-        notification.setContentTitle(resources.getString(R.string.notif_title_sensor_connected))
-        notification.setContentText(resources.getString(R.string.notif_text_tracking_off))
-        startForeground(1, notification.build())
+        sensorManager.connectToSensor(sensorAddress)
     }
 
     // Stops tracking, disconnects sensor, unregisters from event bus and stops self.
@@ -96,11 +94,18 @@ class SensorService() : Service() {
     // Stops tracking if tracking is ON and sensor disconnects.
     @Subscribe
     fun onConnectionStatusChanged(event: ConnectionStatusChangedEvent) {
-        if (
-            event.connectionStatus <= SensorConnectionStatus.DISCONNECTED
-            && trackingStatus == TrackingStatus.TRACKING
-            ) {
-            stopTracking()
+        if (event.connectionStatus <= SensorConnectionStatus.DISCONNECTED) {
+            if (trackingStatus == TrackingStatus.TRACKING) {
+                stopTracking()
+            }
+            notification.setContentTitle(resources.getString(R.string.notif_title_sensor_disconnected))
+            startForeground(1, notification.build())
+        }
+
+        else if (event.connectionStatus == SensorConnectionStatus.CONNECTED) {
+            notification.setContentTitle(resources.getString(R.string.notif_title_sensor_connected))
+            notification.setContentText(resources.getString(R.string.notif_text_tracking_off))
+            startForeground(1, notification.build())
         }
     }
 

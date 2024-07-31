@@ -6,8 +6,10 @@ import com.bk.bk1.data.ComfortIndexRecordRepository
 import com.bk.bk1.data.TrackRecordRepository
 import com.bk.bk1.utilities.DefaultLocationClient
 import com.bk.bk1.utilities.LocationClient
+import com.bk.bk1.utilities.SensorManager
 import com.bk.bk1.utilities.TrackingManager
 import com.google.android.gms.location.LocationServices
+import com.movesense.mds.Mds
 import com.squareup.otto.Bus
 import dagger.Module
 import dagger.Provides
@@ -30,6 +32,15 @@ class ServiceModule {
             context,
             LocationServices.getFusedLocationProviderClient(context)
         )
+    }
+
+    @ServiceScoped
+    @Provides
+    fun provideSensorManager(
+        bus: Bus,
+        mds: Mds
+    ): SensorManager {
+        return SensorManager(bus, mds)
     }
 
     @ServiceScoped
