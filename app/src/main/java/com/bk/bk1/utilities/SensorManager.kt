@@ -41,7 +41,9 @@ class SensorManager @Inject constructor(
         deviceAddress?.let {
             mds.disconnect(it)
         }
+        bus.unregister(this)
         isRegisteredForBus = false
+        bus.unregister(sensorConnectionListener)
     }
 
     // Subscribes for sensor data.

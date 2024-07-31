@@ -16,8 +16,8 @@ class ComfyBikeApp : Application() {
             val channel =
                 NotificationChannel(
                     "sensor_channel",
-                    "ComfyBike oznámení",
-                    NotificationManager.IMPORTANCE_HIGH
+                    "ComfyBike",
+                    NotificationManager.IMPORTANCE_DEFAULT
                 )
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)

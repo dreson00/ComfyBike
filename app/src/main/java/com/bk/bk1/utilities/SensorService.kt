@@ -34,6 +34,11 @@ class SensorService() : Service() {
     private var sensorAddress = String()
     private var trackingStatus = TrackingStatus.NOT_TRACKING
 
+    private var notification =
+        NotificationCompat.Builder(this, "sensor_channel")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setSmallIcon(R.drawable.bicycle_pin)
+
 
     // Called when service receives an action. Calls a method according to the received action.
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -60,12 +65,8 @@ class SensorService() : Service() {
             isRegisteredForBus = true
             bus.register(this)
         }
-        val notification =
-            NotificationCompat.Builder(this, "sensor_channel")
-                .setContentTitle("Sensor Service")
-                .setContentText("Running...")
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-
+        notification.setContentTitle(resources.getString(R.string.notif_title_sensor_connected))
+        notification.setContentText(resources.getString(R.string.notif_text_tracking_off))
         startForeground(1, notification.build())
     }
 
@@ -82,10 +83,14 @@ class SensorService() : Service() {
 
     private fun startTracking() {
         trackingManager.startTracking()
+        notification.setContentText(resources.getString(R.string.notif_text_tracking_on))
+        startForeground(1, notification.build())
     }
 
     private fun stopTracking() {
         trackingManager.stopTracking()
+        notification.setContentText(resources.getString(R.string.notif_text_tracking_off))
+        startForeground(1, notification.build())
     }
 
     // Stops tracking if tracking is ON and sensor disconnects.
