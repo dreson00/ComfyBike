@@ -58,6 +58,13 @@ class TrackingManager @Inject constructor(
             }
             .launchIn(scope)
 
+        createNewTrack()
+
+        trackingStatus = TrackingStatus.TRACKING
+        bus.post(produceTrackingStatusChangedEvent())
+    }
+
+    private fun createNewTrack() {
         // Creates a new Track record in the DB
         runBlocking {
             val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -73,8 +80,6 @@ class TrackingManager @Inject constructor(
 
         // Posts events about new trackId and tracking status.
         bus.post(produceCurrentTrackIdChangedEvent())
-        trackingStatus = TrackingStatus.TRACKING
-        bus.post(produceTrackingStatusChangedEvent())
     }
 
     fun stopTracking() {
@@ -170,8 +175,7 @@ class TrackingManager @Inject constructor(
                 dciCount = comfortIndexRecordRepository.getComfortIndexRecordCount(it)
             }
             if (dciCount >= comfortIndexRecordLimit) {
-                stopTracking()
-                startTracking()
+                createNewTrack()
             }
         }
     }
