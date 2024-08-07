@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
-import android.bluetooth.le.ScanSettings
 import androidx.lifecycle.MutableLiveData
 import javax.inject.Inject
 
@@ -25,26 +24,22 @@ class BluetoothScanManager @Inject constructor(
         val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
         leScanner = bluetoothAdapter?.bluetoothLeScanner
         scanCallback = object : ScanCallback() {
-            override fun onBatchScanResults(results: MutableList<ScanResult>?) {
-                super.onBatchScanResults(results)
-                results?.let {
-                    val deviceList = results
-                        .filter {
-                            it.device.name != null && it.device.name.startsWith("Movesense")
-                        }
-                        .map { it.device }
-
-                    devicesLiveData.postValue(deviceList)
+            override fun onScanResult(callbackType: Int, result: ScanResult) {
+                super.onScanResult(callbackType, result)
+                val newDeviceList = devicesLiveData.value?.toMutableList() ?: mutableListOf()
+                val isDeviceInList = devicesLiveData.value?.contains(result.device)
+                if ((isDeviceInList == null || isDeviceInList == false)
+                    && result.device.name != null
+                    && result.device.name.startsWith("Movesense")
+                ) {
+                    newDeviceList.add(result.device)
+                    devicesLiveData.value = newDeviceList
                 }
             }
+
         }
 
-        val scanSettings = ScanSettings.Builder()
-            .setReportDelay(500)
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
-            .build()
-
-        leScanner?.startScan(listOf(), scanSettings, scanCallback)
+        leScanner?.startScan(scanCallback)
     }
     @SuppressLint("MissingPermission")
     fun stopScan() {

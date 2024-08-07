@@ -567,7 +567,6 @@ fun SensorStatusBar(
             }
         }
     }
-    Text(state.currentComfortIndexRecords.count().toString())
 }
 
 // Testing previews.
