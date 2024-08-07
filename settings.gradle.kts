@@ -14,6 +14,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BK1"
+rootProject.name = "ComfyBike"
 include(":app")
  
